@@ -37,16 +37,16 @@ export async function POST(req) {
   const chatId = process.env.TELEGRAM_CHAT_ID
   const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
 
-  const tarefasOk = tarefas && Object.values(tarefas).every(v => v)
-  const fotosOk = resultados && Object.keys(resultados).length > 0 ? Object.values(resultados).every(r => r?.aprovado) : true
+  const tarefasOk = Boolean(tarefas && Object.values(tarefas).every(v => v))
+  const fotosOk = Boolean(resultados && Object.keys(resultados).length > 0 ? Object.values(resultados).every(r => r?.aprovado) : true)
 
   try {
     await initDB()
     await pool.query(
       'INSERT INTO checklists (nome, tipo, turno, tarefas_ok, fotos_ok, extras, resultados) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-      [nome, tipo, turno, tarefasOk, fotosOk, JSON.stringify(extras || {}), JSON.stringify(resultados || {})]
+      [nome || null, tipo || null, turno || null, tarefasOk, fotosOk, JSON.stringify(extras || {}), JSON.stringify(resultados || {})]
     )
-  } catch (e) { console.error('DB error:', e.message) }
+  } catch (e) { console.error('DB error:', e) }
 
   const emojiFoto = (r) => r?.aprovado ? '✅' : '❌'
   const tipoLabel = {

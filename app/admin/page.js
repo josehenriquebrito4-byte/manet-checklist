@@ -6,6 +6,7 @@ const REFERENCIAS = [
   { key: 'banheiro_m', label: 'Banheiro masculino limpo', emoji: '🚹' },
   { key: 'banheiro_f', label: 'Banheiro feminino limpo', emoji: '🚺' },
   { key: 'frente', label: 'Frente de loja arrumada', emoji: '🏪' },
+  { key: 'bancadas', label: 'Bancadas prontas', emoji: '🍕' },
 ]
 
 export default function Admin() {
