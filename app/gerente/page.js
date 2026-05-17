@@ -222,11 +222,18 @@ export default function Gerente() {
     const d = parseData(i.data)
     return d >= inicioF && d <= fimF
   })
+  const descontosFreelaSemana = descontos.filter(i => {
+    const d = parseData(i.data)
+    return d >= inicioF && d <= fimF
+  })
   const nomesFreela = [...new Set(diariasSemana.map(m => m.nome))]
   const totalDiarias = (nome) => diariasSemana.filter(m => m.nome === nome).reduce((a, m) => a + parseFloat(m.valor), 0)
+  const descFreela = (nome) => descontosFreelaSemana.filter(d => d.nome === nome).reduce((a, d) => a + parseFloat(d.valor), 0)
+  const liquidoFreela = (nome) => totalDiarias(nome) - descFreela(nome)
   const pagoFreela = (nome) => diariasSemana.filter(m => m.nome === nome).every(m => m.pago)
 
   const nomesExistentes = cadastros.map(c => c.nome)
+  const todosNomes = [...new Set([...motoboys.map(m => m.nome), ...diarias.map(d => d.nome)])].sort()
   const getCadastro = (nome) => cadastros.find(c => c.nome === nome)
   const formatData = (d) => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
   const formatDataSimples = (d) => parseData(d).toLocaleDateString('pt-BR')
@@ -286,6 +293,7 @@ export default function Gerente() {
           <button style={st.tab(aba === 'compras')} onClick={() => setAba('compras')}>🛒 Compras</button>
           <button style={st.tab(aba === 'funcionarios')} onClick={() => setAba('funcionarios')}>👥 Equipe</button>
           <button style={st.tab(aba === 'freelancers')} onClick={() => setAba('freelancers')}>🧑‍🍳 Freelancers</button>
+          <button style={st.tab(aba === 'descontos')} onClick={() => setAba('descontos')}>➖ Descontos</button>
         </div>
 
         {aba === 'checklists' && (
@@ -333,6 +341,25 @@ export default function Gerente() {
                 </div>
               )
             })}
+          </>
+        )}
+
+        {aba === 'descontos' && (
+          <>
+            <div style={st.card}>
+              <label style={st.label}>Nome (Motoboy ou Freelancer)</label>
+              <select style={st.select} value={dNome} onChange={e => setDNome(e.target.value)}>
+                <option value="">Selecione...</option>
+                {todosNomes.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <label style={{ ...st.label, marginTop: 10 }}>Valor do Desconto/Vale (R$)</label>
+              <input style={st.input} type="number" placeholder="0,00" value={dValor} onChange={e => setDValor(e.target.value)} />
+              <label style={{ ...st.label, marginTop: 10 }}>Descrição</label>
+              <input style={st.input} placeholder="Ex: Vale, consumo, adiantamento..." value={dDesc} onChange={e => setDDesc(e.target.value)} />
+              <label style={{ ...st.label, marginTop: 10 }}>Data</label>
+              <input style={st.input} type="date" value={dData} onChange={e => setDData(e.target.value)} />
+              <button style={st.btnOrange} onClick={lancarDesconto}>➖ Lançar vale/desconto</button>
+            </div>
           </>
         )}
 
@@ -416,9 +443,31 @@ export default function Gerente() {
                           </div>
                         </div>
                       ))}
+                      {descontosFreelaSemana.filter(d => d.nome === nome).length > 0 && (
+                        <>
+                          <div style={st.sectionTitle}>Vales/descontos</div>
+                          {descontosFreelaSemana.filter(d => d.nome === nome).map(d => (
+                            <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '4px 0', borderBottom: '0.5px solid #f0efe9' }}>
+                              <span style={{ color: '#a32d2d' }}>{d.motivo || 'Desconto'}</span>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span style={{ color: '#a32d2d', fontWeight: 500 }}>-R$ {parseFloat(d.valor).toFixed(2)}</span>
+                                <button onClick={() => deletarDesconto(d.id)} style={st.btnSmall('#f3f2ee', '#888780')}>🗑️</button>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
                       <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #e5e5e0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#888780' }}>
+                          <span>Bruto</span><span>R$ {totalDiarias(nome).toFixed(2)}</span>
+                        </div>
+                        {descFreela(nome) > 0 && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#a32d2d' }}>
+                            <span>Descontos</span><span>-R$ {descFreela(nome).toFixed(2)}</span>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#1a1a18', marginTop: 6 }}>
-                          <span>💰 Total</span><span>R$ {totalDiarias(nome).toFixed(2)}</span>
+                          <span>💰 Líquido</span><span>R$ {liquidoFreela(nome).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -444,7 +493,6 @@ export default function Gerente() {
 
             <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
               <button style={st.subTab(subAba === 'lancamento')} onClick={() => setSubAba('lancamento')}>➕ Dia</button>
-              <button style={st.subTab(subAba === 'vale')} onClick={() => setSubAba('vale')}>➖ Vale</button>
               <button style={st.subTab(subAba === 'resumo')} onClick={() => setSubAba('resumo')}>📊 Resumo</button>
             </div>
 
@@ -464,27 +512,6 @@ export default function Gerente() {
                 <label style={{ ...st.label, marginTop: 10 }}>Data</label>
                 <input style={st.input} type="date" value={lData} onChange={e => setLData(e.target.value)} />
                 <button style={st.btnOrange} onClick={lancarDia}>➕ Lançar dia trabalhado</button>
-              </div>
-            )}
-
-            {subAba === 'vale' && (
-              <div style={st.card}>
-                <label style={st.label}>Nome do motoboy</label>
-                {nomesExistentes.length > 0 ? (
-                  <select style={st.select} value={dNome} onChange={e => setDNome(e.target.value)}>
-                    <option value="">Selecione</option>
-                    {nomesExistentes.map(n => <option key={n} value={n}>{n}</option>)}
-                  </select>
-                ) : (
-                  <input style={st.input} placeholder="Nome" value={dNome} onChange={e => setDNome(e.target.value)} />
-                )}
-                <label style={{ ...st.label, marginTop: 10 }}>Valor (R$)</label>
-                <input style={st.input} type="number" placeholder="0,00" value={dValor} onChange={e => setDValor(e.target.value)} />
-                <label style={{ ...st.label, marginTop: 10 }}>Descrição</label>
-                <input style={st.input} placeholder="Ex: Vale, consumo, adiantamento..." value={dDesc} onChange={e => setDDesc(e.target.value)} />
-                <label style={{ ...st.label, marginTop: 10 }}>Data</label>
-                <input style={st.input} type="date" value={dData} onChange={e => setDData(e.target.value)} />
-                <button style={st.btnOrange} onClick={lancarDesconto}>➖ Lançar vale/desconto</button>
               </div>
             )}
 
