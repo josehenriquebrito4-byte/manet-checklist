@@ -21,6 +21,19 @@ function getSemana(offset = 0) {
   return { inicio, fim }
 }
 
+function getSemanaFreelancers(offset = 0) {
+  const hoje = new Date()
+  const dia = hoje.getDay()
+  let diff = (dia + 6) % 7
+  const inicio = new Date(hoje)
+  inicio.setDate(hoje.getDate() - diff - offset * 7)
+  inicio.setHours(0,0,0,0)
+  const fim = new Date(inicio)
+  fim.setDate(inicio.getDate() + 6)
+  fim.setHours(23,59,59,999)
+  return { inicio, fim }
+}
+
 function parseData(dataStr) {
   const s = typeof dataStr === 'string' ? dataStr.split('T')[0] : new Date(dataStr).toISOString().split('T')[0]
   const [y, m, d] = s.split('-').map(Number)
@@ -39,6 +52,7 @@ export default function Gerente() {
   const [cadastros, setCadastros] = useState([])
   const [compras, setCompras] = useState([])
   const [funcionarios, setFuncionarios] = useState([])
+  const [diarias, setDiarias] = useState([])
   const [loading, setLoading] = useState(false)
   const [semanaOffset, setSemanaOffset] = useState(0)
 
@@ -52,6 +66,11 @@ export default function Gerente() {
   const [cNome, setCNome] = useState('')
   const [cTel, setCTel] = useState('')
   const [cPix, setCPix] = useState('')
+  
+  const [fNome, setFNome] = useState('')
+  const [fFuncao, setFFuncao] = useState('')
+  const [fValor, setFValor] = useState('')
+  const [fData, setFData] = useState(new Date().toISOString().split('T')[0])
 
   const handleLogin = () => {
     if (senha === SENHA) { setAutenticado(true); loadData() }
@@ -61,13 +80,14 @@ export default function Gerente() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [c, m, d, ca, co, fu] = await Promise.all([
+      const [c, m, d, ca, co, fu, di] = await Promise.all([
         fetch('/api/dashboard').then(r => r.json()),
         fetch('/api/motoboys').then(r => r.json()),
         fetch('/api/descontos').then(r => r.json()),
         fetch('/api/cadastro-motoboys').then(r => r.json()),
         fetch('/api/checklist?tipo=compras').then(r => r.json()),
         fetch('/api/funcionarios').then(r => r.json()),
+        fetch('/api/freelancers-diario').then(r => r.json()),
       ])
       if (c.ok) setChecklists(c.data)
       if (m.ok) setMotoboys(m.data)
@@ -75,6 +95,7 @@ export default function Gerente() {
       if (ca.ok) setCadastros(ca.data)
       if (co.ok) setCompras(co.data)
       if (fu.ok) setFuncionarios(fu.data)
+      if (di.ok) setDiarias(di.data)
     } catch(e) {}
     setLoading(false)
   }
@@ -148,6 +169,35 @@ export default function Gerente() {
     loadData()
   }
 
+  const lancarDiaria = async () => {
+    if (!fNome || !fFuncao || !fValor) return
+    await fetch('/api/freelancers-diario', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: fNome, funcao: fFuncao, valor: fValor, data: fData })
+    })
+    setFNome(''); setFFuncao(''); setFValor('')
+    loadData()
+  }
+
+  const deletarDiaria = async (id) => {
+    await fetch('/api/freelancers-diario', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+    loadData()
+  }
+  
+  const marcarPagoFreela = async (nome) => {
+    await fetch('/api/freelancers-diario', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, pago: true })
+    })
+    loadData()
+  }
+
   const { inicio, fim } = getSemana(semanaOffset)
 
   const filtrarSemana = (items) => items.filter(i => {
@@ -166,6 +216,15 @@ export default function Gerente() {
 
   const totalPendente = nomes.filter(n => !pago(n)).reduce((a, n) => a + liquido(n), 0)
   const totalPago = nomes.filter(n => pago(n)).reduce((a, n) => a + liquido(n), 0)
+
+  const { inicio: inicioF, fim: fimF } = getSemanaFreelancers(semanaOffset)
+  const diariasSemana = diarias.filter(i => {
+    const d = parseData(i.data)
+    return d >= inicioF && d <= fimF
+  })
+  const nomesFreela = [...new Set(diariasSemana.map(m => m.nome))]
+  const totalDiarias = (nome) => diariasSemana.filter(m => m.nome === nome).reduce((a, m) => a + parseFloat(m.valor), 0)
+  const pagoFreela = (nome) => diariasSemana.filter(m => m.nome === nome).every(m => m.pago)
 
   const nomesExistentes = cadastros.map(c => c.nome)
   const getCadastro = (nome) => cadastros.find(c => c.nome === nome)
@@ -226,6 +285,7 @@ export default function Gerente() {
           <button style={st.tab(aba === 'historico')} onClick={() => setAba('historico')}>📅 Histórico</button>
           <button style={st.tab(aba === 'compras')} onClick={() => setAba('compras')}>🛒 Compras</button>
           <button style={st.tab(aba === 'funcionarios')} onClick={() => setAba('funcionarios')}>👥 Equipe</button>
+          <button style={st.tab(aba === 'freelancers')} onClick={() => setAba('freelancers')}>🧑‍🍳 Freelancers</button>
         </div>
 
         {aba === 'checklists' && (
@@ -299,6 +359,73 @@ export default function Gerente() {
                 </div>
               ))}
             </div>
+          </>
+        )}
+
+        {aba === 'freelancers' && (
+          <>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              <button style={st.subTab(subAba === 'lancamento')} onClick={() => setSubAba('lancamento')}>➕ Diária</button>
+              <button style={st.subTab(subAba === 'resumo')} onClick={() => setSubAba('resumo')}>📊 Resumo</button>
+            </div>
+
+            {subAba === 'lancamento' && (
+              <div style={st.card}>
+                <label style={st.label}>Nome do freelancer</label>
+                <input style={st.input} placeholder="Nome" value={fNome} onChange={e => setFNome(e.target.value)} />
+                <label style={{ ...st.label, marginTop: 10 }}>Função</label>
+                <select style={st.select} value={fFuncao} onChange={e => setFFuncao(e.target.value)}>
+                  <option value="">Selecione...</option>
+                  <option value="Atendente">Atendente</option>
+                  <option value="Cozinha">Cozinha</option>
+                  <option value="Garçom">Garçom</option>
+                  <option value="Pizzaiolo">Pizzaiolo</option>
+                  <option value="Caixa">Caixa</option>
+                </select>
+                <label style={{ ...st.label, marginTop: 10 }}>Valor do dia (R$)</label>
+                <input style={st.input} type="number" placeholder="0,00" value={fValor} onChange={e => setFValor(e.target.value)} />
+                <label style={{ ...st.label, marginTop: 10 }}>Data</label>
+                <input style={st.input} type="date" value={fData} onChange={e => setFData(e.target.value)} />
+                <button style={st.btnOrange} onClick={lancarDiaria}>➕ Lançar diária</button>
+              </div>
+            )}
+
+            {subAba === 'resumo' && (
+              <>
+                <button style={st.btn} onClick={loadData}>🔄 Atualizar</button>
+                {nomesFreela.length === 0 && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhum lançamento esta semana.</div>}
+                {nomesFreela.map(nome => {
+                  const lancs = diariasSemana.filter(m => m.nome === nome)
+                  const pg = pagoFreela(nome)
+                  const funcao = lancs.length > 0 ? lancs[0].funcao : ''
+                  return (
+                    <div key={nome} style={st.card}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>🧑‍🍳 {nome} <span style={{ fontSize: 12, fontWeight: 400, color: '#888780' }}>({funcao})</span></div>
+                        <button onClick={() => marcarPagoFreela(nome)} style={st.btnSmall(pg ? '#eaf3de' : '#fcebeb', pg ? '#3b6d11' : '#a32d2d')}>
+                          {pg ? '✅ Pago' : '⏳ Pendente'}
+                        </button>
+                      </div>
+                      <div style={st.sectionTitle}>Dias trabalhados</div>
+                      {lancs.map(l => (
+                        <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '4px 0', borderBottom: '0.5px solid #f0efe9' }}>
+                          <span style={{ color: '#888780' }}>{formatDataSimples(l.data)}</span>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <span style={{ fontWeight: 500 }}>R$ {parseFloat(l.valor).toFixed(2)}</span>
+                            <button onClick={() => deletarDiaria(l.id)} style={st.btnSmall('#f3f2ee', '#888780')}>🗑️</button>
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #e5e5e0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#1a1a18', marginTop: 6 }}>
+                          <span>💰 Total</span><span>R$ {totalDiarias(nome).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </>
         )}
 
