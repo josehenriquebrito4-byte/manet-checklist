@@ -84,3 +84,20 @@ export async function POST(req) {
 
   return NextResponse.json({ ok: true })
 }
+
+export async function GET(req) {
+  const { searchParams } = new URL(req.url)
+  const tipo = searchParams.get('tipo')
+  
+  try {
+    let result;
+    if (tipo) {
+      result = await pool.query('SELECT * FROM checklists WHERE tipo = $1 ORDER BY criado_em DESC', [tipo])
+    } else {
+      result = await pool.query('SELECT * FROM checklists ORDER BY criado_em DESC LIMIT 100')
+    }
+    return NextResponse.json({ ok: true, data: result.rows })
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: e.message })
+  }
+}

@@ -37,6 +37,8 @@ export default function Gerente() {
   const [motoboys, setMotoboys] = useState([])
   const [descontos, setDescontos] = useState([])
   const [cadastros, setCadastros] = useState([])
+  const [compras, setCompras] = useState([])
+  const [funcionarios, setFuncionarios] = useState([])
   const [loading, setLoading] = useState(false)
   const [semanaOffset, setSemanaOffset] = useState(0)
 
@@ -59,16 +61,20 @@ export default function Gerente() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [c, m, d, ca] = await Promise.all([
+      const [c, m, d, ca, co, fu] = await Promise.all([
         fetch('/api/dashboard').then(r => r.json()),
         fetch('/api/motoboys').then(r => r.json()),
         fetch('/api/descontos').then(r => r.json()),
         fetch('/api/cadastro-motoboys').then(r => r.json()),
+        fetch('/api/checklist?tipo=compras').then(r => r.json()),
+        fetch('/api/funcionarios').then(r => r.json()),
       ])
       if (c.ok) setChecklists(c.data)
       if (m.ok) setMotoboys(m.data)
       if (d.ok) setDescontos(d.data)
       if (ca.ok) setCadastros(ca.data)
+      if (co.ok) setCompras(co.data)
+      if (fu.ok) setFuncionarios(fu.data)
     } catch(e) {}
     setLoading(false)
   }
@@ -180,8 +186,8 @@ export default function Gerente() {
     btnOrange: { width: '100%', padding: '13px', borderRadius: 12, background: '#D85A30', color: '#fff', fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", marginTop: 10 },
     btnSmall: (bg, color) => ({ padding: '5px 11px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: bg, color }),
     card: { background: '#fff', borderRadius: 12, border: '0.5px solid #e5e5e0', padding: '14px 16px', marginBottom: 10 },
-    tabs: { display: 'flex', gap: 6, marginBottom: 16 },
-    tab: (a) => ({ flex: 1, padding: '10px 4px', borderRadius: 8, border: 'none', background: a ? '#1a1a18' : '#f3f2ee', color: a ? '#fff' : '#888780', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
+    tabs: { display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 },
+    tab: (a) => ({ flex: '0 0 auto', padding: '10px 12px', borderRadius: 8, border: 'none', background: a ? '#1a1a18' : '#f3f2ee', color: a ? '#fff' : '#888780', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
     subTab: (a) => ({ flex: 1, padding: '8px 4px', borderRadius: 8, border: 'none', background: a ? '#D85A30' : '#f3f2ee', color: a ? '#fff' : '#888780', fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
     badge: (ok) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: ok ? '#eaf3de' : '#fcebeb', color: ok ? '#3b6d11' : '#a32d2d' }),
     sectionTitle: { fontSize: 11, fontWeight: 700, color: '#888780', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12 },
@@ -218,6 +224,8 @@ export default function Gerente() {
           <button style={st.tab(aba === 'motoboys')} onClick={() => setAba('motoboys')}>🛵 Motoboys</button>
           <button style={st.tab(aba === 'cadastro')} onClick={() => setAba('cadastro')}>👤 Cadastro</button>
           <button style={st.tab(aba === 'historico')} onClick={() => setAba('historico')}>📅 Histórico</button>
+          <button style={st.tab(aba === 'compras')} onClick={() => setAba('compras')}>🛒 Compras</button>
+          <button style={st.tab(aba === 'funcionarios')} onClick={() => setAba('funcionarios')}>👥 Equipe</button>
         </div>
 
         {aba === 'checklists' && (
@@ -238,6 +246,59 @@ export default function Gerente() {
                 </div>
               </div>
             ))}
+          </>
+        )}
+
+        {aba === 'compras' && (
+          <>
+            <button style={st.btn} onClick={loadData}>🔄 Atualizar</button>
+            {loading && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Carregando...</div>}
+            {compras.length === 0 && !loading && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhuma compra registrada.</div>}
+            {compras.map(c => {
+              const valores = c.extras?.valores || {}
+              const total = Object.values(valores).reduce((acc, v) => acc + (parseFloat(v) || 0), 0)
+              const pendente = c.extras?.pendente
+
+              return (
+                <div key={c.id} style={st.card}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>🛒 Compras</span>
+                    <span style={{ fontSize: 12, color: '#888780' }}>{formatData(c.criado_em)}</span>
+                  </div>
+                  <div style={{ fontSize: 14, marginBottom: 6 }}>👤 {c.nome}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>R$ {total.toFixed(2)}</span>
+                    <span style={st.badge(!pendente)}>{!pendente ? '✅ Finalizado' : '⏳ Pendente'}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        )}
+
+        {aba === 'funcionarios' && (
+          <>
+            <button style={st.btn} onClick={loadData}>🔄 Atualizar</button>
+            {loading && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Carregando...</div>}
+            {funcionarios.length === 0 && !loading && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhum funcionário cadastrado.</div>}
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+              {funcionarios.map(f => (
+                <div key={f.id} style={{ ...st.card, display: 'flex', gap: 16, alignItems: 'center', marginBottom: 0 }}>
+                  {f.foto_base64 ? (
+                    <img src={f.foto_base64} style={{ width: 60, height: 60, borderRadius: 30, objectFit: 'cover', border: '2px solid #D85A30' }} />
+                  ) : (
+                    <div style={{ width: 60, height: 60, borderRadius: 30, background: '#f3f2ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>👤</div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a18', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.nome}</div>
+                    <div style={{ fontSize: 13, color: '#888780', marginTop: 2, textTransform: 'capitalize' }}>{tipoLabel[f.funcao] || f.funcao}</div>
+                    {f.telefone && <div style={{ fontSize: 12, color: '#888780', marginTop: 4 }}>📱 {f.telefone}</div>}
+                    {f.chave_pix && <div style={{ fontSize: 12, color: '#888780', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🔑 PIX: {f.chave_pix}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         )}
 
