@@ -14,39 +14,42 @@ export async function POST(req) {
   }
 
   // Tenta buscar foto de referência
-  let refParts = []
+  let refContent = []
   try {
     const refRes = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/reference?key=${item}`)
     const refData = await refRes.json()
     if (refData.ok) {
-      refParts = [
-        { text: `Esta é a FOTO DE REFERÊNCIA mostrando como deve estar o ${labels[item] || item}:` },
-        { inline_data: { mime_type: refData.mimeType, data: refData.imageBase64 } },
-        { text: `Agora analise a FOTO DO FUNCIONÁRIO abaixo e compare com a referência. O ambiente está parecido com a referência? Está limpo e organizado da mesma forma? Responda APENAS em JSON sem nenhum texto extra: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },
+      refContent = [
+        { type: 'text', text: `Esta é a FOTO DE REFERÊNCIA mostrando como deve estar o ${labels[item] || item}:` },
+        { type: 'image', source: { type: 'base64', media_type: refData.mimeType, data: refData.imageBase64 } },
+        { type: 'text', text: `Agora analise a FOTO DO FUNCIONÁRIO abaixo e compare com a referência. O ambiente está parecido com a referência? Está limpo e organizado da mesma forma? Responda APENAS em JSON sem nenhum texto extra: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },
+        { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
       ]
     }
   } catch (e) {}
 
-  const parts = refParts.length > 0 ? [
-    ...refParts,
-    { inline_data: { mime_type: mimeType, data: imageBase64 } }
-  ] : [
-    { text: `Analise esta foto de ${labels[item] || item}. O ambiente está limpo e organizado? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },
-    { inline_data: { mime_type: mimeType, data: imageBase64 } }
+  const content = refContent.length > 0 ? refContent : [
+    { type: 'text', text: `Analise esta foto de ${labels[item] || item}. O ambiente está limpo e organizado? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },
+    { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
   ]
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
     body: JSON.stringify({
-      contents: [{ parts }],
-      generationConfig: { temperature: 0.1 }
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 256,
+      messages: [{ role: 'user', content }]
     })
   })
 
   const data = await res.json()
-  console.log('Gemini response:', JSON.stringify(data))
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  console.log('Claude response:', JSON.stringify(data))
+  const text = data.content?.[0]?.text || ''
 
   try {
     const clean = text.replace(/```json|```/g, '').trim()
