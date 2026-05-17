@@ -8,30 +8,40 @@ const tipoLabel = {
   atendente: 'Atendente 📲', despacho: 'Despacho 🛵', compras: 'Compras 🛒',
 }
 
-const funcoes = ['Atendente', 'Cozinha', 'Motoboy', 'Garçom', 'Pizzaiolo', 'Caixa', 'Despacho']
+function getSemana() {
+  const hoje = new Date()
+  const dia = hoje.getDay()
+  let diff = (dia - 3 + 7) % 7
+  const inicio = new Date(hoje)
+  inicio.setDate(hoje.getDate() - diff)
+  inicio.setHours(0,0,0,0)
+  const fim = new Date(inicio)
+  fim.setDate(inicio.getDate() + 6)
+  fim.setHours(23,59,59,999)
+  return { inicio, fim }
+}
 
 export default function Gerente() {
   const [autenticado, setAutenticado] = useState(false)
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
-  const [aba, setAba] = useState('dashboard')
-  const [abaFreelancer, setAbaFreelancer] = useState('lancamentos')
+  const [aba, setAba] = useState('checklists')
+  const [subAba, setSubAba] = useState('lancamento')
   const [checklists, setChecklists] = useState([])
-  const [freelancers, setFreelancers] = useState([])
+  const [motoboys, setMotoboys] = useState([])
   const [descontos, setDescontos] = useState([])
   const [loading, setLoading] = useState(false)
 
-  // Novo lançamento
-  const [novoNome, setNovoNome] = useState('')
-  const [novaFuncao, setNovaFuncao] = useState('')
-  const [novoValor, setNovoValor] = useState('')
-  const [novaData, setNovaData] = useState(new Date().toISOString().split('T')[0])
+  // Lançamento dia
+  const [lNome, setLNome] = useState('')
+  const [lValor, setLValor] = useState('')
+  const [lData, setLData] = useState(new Date().toISOString().split('T')[0])
 
-  // Novo desconto avulso
-  const [descontoNome, setDescontoNome] = useState('')
-  const [descontoValor, setDescontoValor] = useState('')
-  const [descontoMotivo, setDescontoMotivo] = useState('')
-  const [descontoData, setDescontoData] = useState(new Date().toISOString().split('T')[0])
+  // Vale/desconto
+  const [dNome, setDNome] = useState('')
+  const [dValor, setDValor] = useState('')
+  const [dDesc, setDDesc] = useState('')
+  const [dData, setDData] = useState(new Date().toISOString().split('T')[0])
 
   const handleLogin = () => {
     if (senha === SENHA) { setAutenticado(true); loadData() }
@@ -41,51 +51,51 @@ export default function Gerente() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [c, f, d] = await Promise.all([
+      const [c, m, d] = await Promise.all([
         fetch('/api/dashboard').then(r => r.json()),
-        fetch('/api/freelancers').then(r => r.json()),
+        fetch('/api/motoboys').then(r => r.json()),
         fetch('/api/descontos').then(r => r.json()),
       ])
       if (c.ok) setChecklists(c.data)
-      if (f.ok) setFreelancers(f.data)
+      if (m.ok) setMotoboys(m.data)
       if (d.ok) setDescontos(d.data)
-    } catch (e) {}
+    } catch(e) {}
     setLoading(false)
   }
 
-  const adicionarFreelancer = async () => {
-    if (!novoNome || !novaFuncao || !novoValor) return
-    await fetch('/api/freelancers', {
+  const lancarDia = async () => {
+    if (!lNome || !lValor) return
+    await fetch('/api/motoboys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: novoNome, funcao: novaFuncao, valor: novoValor, data: novaData })
+      body: JSON.stringify({ nome: lNome, valor: lValor, data: lData })
     })
-    setNovoNome(''); setNovaFuncao(''); setNovoValor('')
+    setLNome(''); setLValor('')
     loadData()
   }
 
-  const adicionarDesconto = async () => {
-    if (!descontoNome || !descontoValor) return
+  const lancarDesconto = async () => {
+    if (!dNome || !dValor) return
     await fetch('/api/descontos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: descontoNome, valor: descontoValor, motivo: descontoMotivo, data: descontoData })
+      body: JSON.stringify({ nome: dNome, valor: dValor, motivo: dDesc, data: dData })
     })
-    setDescontoNome(''); setDescontoValor(''); setDescontoMotivo('')
+    setDNome(''); setDValor(''); setDDesc('')
     loadData()
   }
 
-  const togglePago = async (id, pago) => {
-    await fetch('/api/freelancers', {
+  const marcarPago = async (nome) => {
+    await fetch('/api/motoboys', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, pago: !pago })
+      body: JSON.stringify({ nome, pago: true })
     })
     loadData()
   }
 
-  const deletarFreelancer = async (id) => {
-    await fetch('/api/freelancers', {
+  const deletarLancamento = async (id) => {
+    await fetch('/api/motoboys', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id })
@@ -102,37 +112,47 @@ export default function Gerente() {
     loadData()
   }
 
+  const { inicio, fim } = getSemana()
+  const filtrarSemana = (items) => items.filter(i => {
+    const d = new Date(i.data); d.setHours(12)
+    return d >= inicio && d <= fim
+  })
+
+  const motoboysSemana = filtrarSemana(motoboys)
+  const descontosSemana = filtrarSemana(descontos)
+  const nomes = [...new Set(motoboysSemana.map(m => m.nome))]
+
+  const bruto = (nome) => motoboysSemana.filter(m => m.nome === nome).reduce((a, m) => a + parseFloat(m.valor), 0)
+  const desc = (nome) => descontosSemana.filter(d => d.nome === nome).reduce((a, d) => a + parseFloat(d.valor), 0)
+  const liquido = (nome) => bruto(nome) - desc(nome)
+  const pago = (nome) => motoboysSemana.filter(m => m.nome === nome).every(m => m.pago)
+
+  const totalPendente = nomes.filter(n => !pago(n)).reduce((a, n) => a + liquido(n), 0)
+  const totalPago = nomes.filter(n => pago(n)).reduce((a, n) => a + liquido(n), 0)
+
+  const nomesExistentes = [...new Set(motoboys.map(m => m.nome))]
+
   const formatData = (d) => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-
-  // Calcula total líquido por nome
-  const totalBruto = (nome) => freelancers.filter(f => f.nome === nome).reduce((acc, f) => acc + parseFloat(f.valor), 0)
-  const totalDesconto = (nome) => descontos.filter(d => d.nome === nome).reduce((acc, d) => acc + parseFloat(d.valor), 0)
-  const totalLiquido = (nome) => totalBruto(nome) - totalDesconto(nome)
-
-  const totalPendente = [...new Set(freelancers.filter(f => !f.pago).map(f => f.nome))].reduce((acc, nome) => acc + totalLiquido(nome), 0)
-  const totalPago = [...new Set(freelancers.filter(f => f.pago).map(f => f.nome))].reduce((acc, nome) => acc + totalLiquido(nome), 0)
-
-  // Nomes únicos dos freelancers
-  const nomesFreelancers = [...new Set(freelancers.map(f => f.nome))]
 
   const st = {
     wrap: { maxWidth: 480, margin: '0 auto', padding: '0 0 40px', fontFamily: "'DM Sans', system-ui, sans-serif" },
     header: { background: '#1a1a18', padding: '20px 20px 24px', color: '#fff' },
     logo: { fontSize: 13, fontWeight: 500, opacity: 0.85, marginBottom: 4 },
     title: { fontSize: 22, fontWeight: 600, margin: 0 },
+    subtitle: { fontSize: 13, opacity: 0.8, marginTop: 4 },
     body: { padding: '20px 16px' },
     label: { fontSize: 13, fontWeight: 500, color: '#888780', marginBottom: 6, display: 'block' },
-    input: { width: '100%', padding: '12px 14px', fontSize: 15, borderRadius: 10, border: '0.5px solid #d5d3cc', background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' },
+    input: { width: '100%', padding: '12px 14px', fontSize: 15, borderRadius: 10, border: '0.5px solid #d5d3cc', background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box', marginBottom: 2 },
     select: { width: '100%', padding: '12px 14px', fontSize: 15, borderRadius: 10, border: '0.5px solid #d5d3cc', background: '#fff', fontFamily: "'DM Sans', system-ui, sans-serif", boxSizing: 'border-box' },
-    btn: { width: '100%', padding: '14px', borderRadius: 12, background: '#1a1a18', color: '#fff', fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", marginTop: 8 },
-    btnOrange: { width: '100%', padding: '14px', borderRadius: 12, background: '#D85A30', color: '#fff', fontSize: 16, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", marginTop: 8 },
-    btnSmall: { padding: '6px 12px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
+    btn: { width: '100%', padding: '13px', borderRadius: 12, background: '#1a1a18', color: '#fff', fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", marginTop: 10 },
+    btnOrange: { width: '100%', padding: '13px', borderRadius: 12, background: '#D85A30', color: '#fff', fontSize: 15, fontWeight: 600, border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif", marginTop: 10 },
+    btnSmall: (bg, color) => ({ padding: '5px 11px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: bg, color }),
     card: { background: '#fff', borderRadius: 12, border: '0.5px solid #e5e5e0', padding: '14px 16px', marginBottom: 10 },
-    tabs: { display: 'flex', gap: 8, marginBottom: 20 },
-    tab: (active) => ({ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: active ? '#1a1a18' : '#f3f2ee', color: active ? '#fff' : '#888780', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
-    tabSmall: (active) => ({ flex: 1, padding: '8px', borderRadius: 8, border: 'none', background: active ? '#D85A30' : '#f3f2ee', color: active ? '#fff' : '#888780', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
+    tabs: { display: 'flex', gap: 6, marginBottom: 16 },
+    tab: (a) => ({ flex: 1, padding: '10px 6px', borderRadius: 8, border: 'none', background: a ? '#1a1a18' : '#f3f2ee', color: a ? '#fff' : '#888780', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
+    subTab: (a) => ({ flex: 1, padding: '8px 4px', borderRadius: 8, border: 'none', background: a ? '#D85A30' : '#f3f2ee', color: a ? '#fff' : '#888780', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif" }),
     badge: (ok) => ({ display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: ok ? '#eaf3de' : '#fcebeb', color: ok ? '#3b6d11' : '#a32d2d' }),
-    sectionTitle: { fontSize: 13, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 20 },
+    sectionTitle: { fontSize: 12, fontWeight: 600, color: '#888780', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 16 },
   }
 
   if (!autenticado) return (
@@ -155,14 +175,15 @@ export default function Gerente() {
       <div style={st.header}>
         <div style={st.logo}>#VEM PRA MANET</div>
         <h1 style={st.title}>Portal do Gerente</h1>
+        <div style={st.subtitle}>Semana: {inicio.toLocaleDateString('pt-BR')} — {fim.toLocaleDateString('pt-BR')}</div>
       </div>
       <div style={st.body}>
         <div style={st.tabs}>
-          <button style={st.tab(aba === 'dashboard')} onClick={() => setAba('dashboard')}>📋 Checklists</button>
-          <button style={st.tab(aba === 'freelancers')} onClick={() => setAba('freelancers')}>👥 Freelancers</button>
+          <button style={st.tab(aba === 'checklists')} onClick={() => setAba('checklists')}>📋 Checklists</button>
+          <button style={st.tab(aba === 'motoboys')} onClick={() => setAba('motoboys')}>🛵 Motoboys</button>
         </div>
 
-        {aba === 'dashboard' && (
+        {aba === 'checklists' && (
           <>
             <button style={st.btn} onClick={loadData}>🔄 Atualizar</button>
             {loading && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Carregando...</div>}
@@ -173,121 +194,121 @@ export default function Gerente() {
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{tipoLabel[c.tipo] || c.tipo}</span>
                   <span style={{ fontSize: 12, color: '#888780' }}>{formatData(c.criado_em)}</span>
                 </div>
-                <div style={{ fontSize: 14, color: '#1a1a18', marginBottom: 6 }}>👤 {c.nome}</div>
+                <div style={{ fontSize: 14, marginBottom: 6 }}>👤 {c.nome}</div>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <span style={st.badge(c.tarefas_ok)}>{c.tarefas_ok ? '✅ Tarefas OK' : '❌ Tarefas'}</span>
-                  <span style={st.badge(c.fotos_ok)}>{c.fotos_ok ? '✅ Fotos OK' : '❌ Fotos'}</span>
+                  <span style={st.badge(c.tarefas_ok)}>{c.tarefas_ok ? '✅ Tarefas' : '❌ Tarefas'}</span>
+                  <span style={st.badge(c.fotos_ok)}>{c.fotos_ok ? '✅ Fotos' : '❌ Fotos'}</span>
                 </div>
               </div>
             ))}
           </>
         )}
 
-        {aba === 'freelancers' && (
+        {aba === 'motoboys' && (
           <>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-              <div style={{ flex: 1, background: '#fcebeb', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: '#a32d2d', fontWeight: 600 }}>PENDENTE</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#a32d2d' }}>R$ {totalPendente.toFixed(2)}</div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, background: '#fcebeb', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ fontSize: 10, color: '#a32d2d', fontWeight: 700 }}>A PAGAR</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#a32d2d' }}>R$ {totalPendente.toFixed(2)}</div>
               </div>
-              <div style={{ flex: 1, background: '#eaf3de', borderRadius: 10, padding: '12px 14px' }}>
-                <div style={{ fontSize: 11, color: '#3b6d11', fontWeight: 600 }}>PAGO</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#3b6d11' }}>R$ {totalPago.toFixed(2)}</div>
+              <div style={{ flex: 1, background: '#eaf3de', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ fontSize: 10, color: '#3b6d11', fontWeight: 700 }}>PAGO</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#3b6d11' }}>R$ {totalPago.toFixed(2)}</div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              <button style={st.tabSmall(abaFreelancer === 'lancamentos')} onClick={() => setAbaFreelancer('lancamentos')}>➕ Lançamento</button>
-              <button style={st.tabSmall(abaFreelancer === 'desconto')} onClick={() => setAbaFreelancer('desconto')}>➖ Desconto</button>
-              <button style={st.tabSmall(abaFreelancer === 'lista')} onClick={() => setAbaFreelancer('lista')}>📋 Lista</button>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              <button style={st.subTab(subAba === 'lancamento')} onClick={() => setSubAba('lancamento')}>➕ Dia trabalhado</button>
+              <button style={st.subTab(subAba === 'vale')} onClick={() => setSubAba('vale')}>➖ Vale/desconto</button>
+              <button style={st.subTab(subAba === 'resumo')} onClick={() => setSubAba('resumo')}>📊 Resumo</button>
             </div>
 
-            {abaFreelancer === 'lancamentos' && (
+            {subAba === 'lancamento' && (
               <div style={st.card}>
-                <label style={st.label}>Nome</label>
-                <input style={st.input} placeholder="Nome do freelancer" value={novoNome} onChange={e => setNovoNome(e.target.value)} />
-                <label style={{ ...st.label, marginTop: 10 }}>Função</label>
-                <select style={st.select} value={novaFuncao} onChange={e => setNovaFuncao(e.target.value)}>
-                  <option value="">Selecione</option>
-                  {funcoes.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-                <label style={{ ...st.label, marginTop: 10 }}>Valor (R$)</label>
-                <input style={st.input} type="number" placeholder="0,00" value={novoValor} onChange={e => setNovoValor(e.target.value)} />
+                <label style={st.label}>Nome do motoboy</label>
+                <input style={st.input} placeholder="Nome" value={lNome} onChange={e => setLNome(e.target.value)} />
+                <label style={{ ...st.label, marginTop: 10 }}>Valor do dia (R$)</label>
+                <input style={st.input} type="number" placeholder="0,00" value={lValor} onChange={e => setLValor(e.target.value)} />
                 <label style={{ ...st.label, marginTop: 10 }}>Data</label>
-                <input style={st.input} type="date" value={novaData} onChange={e => setNovaData(e.target.value)} />
-                <button style={st.btnOrange} onClick={adicionarFreelancer}>➕ Adicionar lançamento</button>
+                <input style={st.input} type="date" value={lData} onChange={e => setLData(e.target.value)} />
+                <button style={st.btnOrange} onClick={lancarDia}>➕ Lançar dia trabalhado</button>
               </div>
             )}
 
-            {abaFreelancer === 'desconto' && (
+            {subAba === 'vale' && (
               <div style={st.card}>
-                <label style={st.label}>Nome do freelancer</label>
-                {nomesFreelancers.length > 0 ? (
-                  <select style={st.select} value={descontoNome} onChange={e => setDescontoNome(e.target.value)}>
+                <label style={st.label}>Nome do motoboy</label>
+                {nomesExistentes.length > 0 ? (
+                  <select style={st.select} value={dNome} onChange={e => setDNome(e.target.value)}>
                     <option value="">Selecione</option>
-                    {nomesFreelancers.map(n => <option key={n} value={n}>{n}</option>)}
+                    {nomesExistentes.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 ) : (
-                  <input style={st.input} placeholder="Nome do freelancer" value={descontoNome} onChange={e => setDescontoNome(e.target.value)} />
+                  <input style={st.input} placeholder="Nome" value={dNome} onChange={e => setDNome(e.target.value)} />
                 )}
-                <label style={{ ...st.label, marginTop: 10 }}>Valor do desconto (R$)</label>
-                <input style={st.input} type="number" placeholder="0,00" value={descontoValor} onChange={e => setDescontoValor(e.target.value)} />
-                <label style={{ ...st.label, marginTop: 10 }}>Motivo</label>
-                <input style={st.input} placeholder="Ex: Vale, consumo, adiantamento..." value={descontoMotivo} onChange={e => setDescontoMotivo(e.target.value)} />
+                <label style={{ ...st.label, marginTop: 10 }}>Valor do vale/desconto (R$)</label>
+                <input style={st.input} type="number" placeholder="0,00" value={dValor} onChange={e => setDValor(e.target.value)} />
+                <label style={{ ...st.label, marginTop: 10 }}>Descrição</label>
+                <input style={st.input} placeholder="Ex: Vale, consumo, adiantamento..." value={dDesc} onChange={e => setDDesc(e.target.value)} />
                 <label style={{ ...st.label, marginTop: 10 }}>Data</label>
-                <input style={st.input} type="date" value={descontoData} onChange={e => setDescontoData(e.target.value)} />
-                <button style={st.btnOrange} onClick={adicionarDesconto}>➖ Lançar desconto</button>
+                <input style={st.input} type="date" value={dData} onChange={e => setDData(e.target.value)} />
+                <button style={st.btnOrange} onClick={lancarDesconto}>➖ Lançar vale/desconto</button>
               </div>
             )}
 
-            {abaFreelancer === 'lista' && (
+            {subAba === 'resumo' && (
               <>
                 <button style={st.btn} onClick={loadData}>🔄 Atualizar</button>
-                {nomesFreelancers.length === 0 && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhum lançamento ainda.</div>}
-                {nomesFreelancers.map(nome => {
-                  const lancs = freelancers.filter(f => f.nome === nome)
-                  const descs = descontos.filter(d => d.nome === nome)
-                  const bruto = totalBruto(nome)
-                  const desc = totalDesconto(nome)
-                  const liq = totalLiquido(nome)
-                  const pago = lancs.every(f => f.pago)
+                {nomes.length === 0 && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhum lançamento esta semana.</div>}
+                {nomes.map(nome => {
+                  const lancs = motoboysSemana.filter(m => m.nome === nome)
+                  const descs = descontosSemana.filter(d => d.nome === nome)
+                  const pg = pago(nome)
                   return (
                     <div key={nome} style={st.card}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <div style={{ fontSize: 15, fontWeight: 600 }}>{nome}</div>
-                        <button onClick={() => togglePago(lancs[0]?.id, pago)} style={{ ...st.btnSmall, background: pago ? '#eaf3de' : '#fcebeb', color: pago ? '#3b6d11' : '#a32d2d' }}>
-                          {pago ? '✅ Pago' : '⏳ Pendente'}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>🛵 {nome}</div>
+                        <button onClick={() => marcarPago(nome)} style={st.btnSmall(pg ? '#eaf3de' : '#fcebeb', pg ? '#3b6d11' : '#a32d2d')}>
+                          {pg ? '✅ Pago' : '⏳ Pendente'}
                         </button>
                       </div>
-                      {lancs.map(f => (
-                        <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#888780', padding: '4px 0' }}>
-                          <span>{new Date(f.data).toLocaleDateString('pt-BR')} — {f.funcao}</span>
-                          <span>R$ {parseFloat(f.valor).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      {descs.map(d => (
-                        <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#a32d2d', padding: '4px 0' }}>
-                          <span>➖ {d.motivo || 'Desconto'} ({new Date(d.data).toLocaleDateString('pt-BR')})</span>
+                      <div style={st.sectionTitle}>Dias trabalhados</div>
+                      {lancs.map(l => (
+                        <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '4px 0', borderBottom: '0.5px solid #f0efe9' }}>
+                          <span style={{ color: '#888780' }}>{new Date(l.data).toLocaleDateString('pt-BR')}</span>
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <span>-R$ {parseFloat(d.valor).toFixed(2)}</span>
-                            <button onClick={() => deletarDesconto(d.id)} style={{ ...st.btnSmall, background: 'none', color: '#a32d2d', padding: '2px 6px' }}>🗑️</button>
+                            <span style={{ color: '#1a1a18', fontWeight: 500 }}>R$ {parseFloat(l.valor).toFixed(2)}</span>
+                            <button onClick={() => deletarLancamento(l.id)} style={st.btnSmall('#f3f2ee', '#888780')}>🗑️</button>
                           </div>
                         </div>
                       ))}
-                      <div style={{ borderTop: '1px solid #f0efe9', marginTop: 8, paddingTop: 8 }}>
+                      {descs.length > 0 && (
+                        <>
+                          <div style={st.sectionTitle}>Vales/descontos</div>
+                          {descs.map(d => (
+                            <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '4px 0', borderBottom: '0.5px solid #f0efe9' }}>
+                              <span style={{ color: '#a32d2d' }}>{d.motivo || 'Desconto'} — {new Date(d.data).toLocaleDateString('pt-BR')}</span>
+                              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <span style={{ color: '#a32d2d', fontWeight: 500 }}>-R$ {parseFloat(d.valor).toFixed(2)}</span>
+                                <button onClick={() => deletarDesconto(d.id)} style={st.btnSmall('#f3f2ee', '#888780')}>🗑️</button>
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #e5e5e0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#888780' }}>
-                          <span>Bruto</span><span>R$ {bruto.toFixed(2)}</span>
+                          <span>Bruto</span><span>R$ {bruto(nome).toFixed(2)}</span>
                         </div>
-                        {desc > 0 && (
+                        {desc(nome) > 0 && (
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#a32d2d' }}>
-                            <span>Descontos</span><span>-R$ {desc.toFixed(2)}</span>
+                            <span>Descontos</span><span>-R$ {desc(nome).toFixed(2)}</span>
                           </div>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, fontWeight: 700, color: '#1a1a18', marginTop: 4 }}>
-                          <span>Líquido</span><span>R$ {liq.toFixed(2)}</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 700, color: '#1a1a18', marginTop: 6 }}>
+                          <span>💰 Líquido</span><span>R$ {liquido(nome).toFixed(2)}</span>
                         </div>
                       </div>
-                      <button onClick={() => deletarFreelancer(lancs[0]?.id)} style={{ ...st.btnSmall, background: '#f3f2ee', color: '#888780', marginTop: 8, border: '1px solid #e5e5e0' }}>🗑️ Remover último lançamento</button>
                     </div>
                   )
                 })}
