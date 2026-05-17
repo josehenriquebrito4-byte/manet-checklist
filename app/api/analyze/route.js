@@ -3,31 +3,44 @@ import { NextResponse } from 'next/server'
 export async function POST(req) {
   const { nome, item, imageBase64, mimeType, tipo } = await req.json()
 
-  const prompts = {
-    salao: 'Esta foto mostra um salão de restaurante. O salão está com mesas organizadas, cadeiras arrumadas e ambiente limpo? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}',
-    banheiro_m: 'Esta foto mostra um banheiro masculino. O banheiro está limpo, organizado e em condições de uso? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}',
-    banheiro_f: 'Esta foto mostra um banheiro feminino. O banheiro está limpo, organizado e em condições de uso? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}',
-    frente: 'Esta foto mostra a frente de uma loja de restaurante. A fachada está limpa, organizada e pronta para receber clientes? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}',
-    gas: 'Esta foto mostra um registro de gás. O registro está fechado (posição perpendicular ao cano)? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta"}',
-    freezer: 'Esta foto mostra um freezer. O freezer está organizado e fechado corretamente? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta"}',
-    bancada: 'Esta foto mostra uma bancada de pizzaria. A bancada está limpa e montada? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta"}',
+  const labels = {
+    salao: 'salão de restaurante arrumado e limpo',
+    banheiro_m: 'banheiro masculino limpo e organizado',
+    banheiro_f: 'banheiro feminino limpo e organizado',
+    frente: 'frente de loja limpa e organizada',
+    gas: 'registro de gás fechado',
+    freezer: 'freezer organizado',
+    bancada: 'bancada de pizzaria limpa e montada',
   }
 
-  const prompt = prompts[item] || 'Analise se a imagem mostra o ambiente limpo e organizado. Responda APENAS em JSON: {"aprovado": true, "status": "OK", "observacao": "ok"}'
+  // Tenta buscar foto de referência
+  let refParts = []
+  try {
+    const refRes = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/reference?key=${item}`)
+    const refData = await refRes.json()
+    if (refData.ok) {
+      refParts = [
+        { text: `Esta é a FOTO DE REFERÊNCIA mostrando como deve estar o ${labels[item] || item}:` },
+        { inline_data: { mime_type: refData.mimeType, data: refData.imageBase64 } },
+        { text: `Agora analise a FOTO DO FUNCIONÁRIO abaixo e compare com a referência. O ambiente está parecido com a referência? Está limpo e organizado da mesma forma? Responda APENAS em JSON sem nenhum texto extra: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },
+      ]
+    }
+  } catch (e) {}
+
+  const parts = refParts.length > 0 ? [
+    ...refParts,
+    { inline_data: { mime_type: mimeType, data: imageBase64 } }
+  ] : [
+    { text: `Analise esta foto de ${labels[item] || item}. O ambiente está limpo e organizado? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },
+    { inline_data: { mime_type: mimeType, data: imageBase64 } }
+  ]
 
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: imageBase64 } }
-        ]
-      }],
-      generationConfig: {
-        temperature: 0.1
-      }
+      contents: [{ parts }],
+      generationConfig: { temperature: 0.1 }
     })
   })
 
