@@ -33,7 +33,14 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const key = searchParams.get('key')
 
-  if (!key) return NextResponse.json({ ok: false })
+  if (!key) {
+    try {
+      const result = await pool.query('SELECT key FROM referencias')
+      return NextResponse.json({ ok: true, keys: result.rows.map(r => r.key) })
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: e.message })
+    }
+  }
 
   try {
     const result = await pool.query(

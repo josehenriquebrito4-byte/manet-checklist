@@ -1,4 +1,7 @@
 import { NextResponse } from 'next/server'
+import { Pool } from 'pg'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 export async function POST(req) {
   const { nome, item, imageBase64, mimeType, tipo } = await req.json()
@@ -16,9 +19,12 @@ export async function POST(req) {
   // Tenta buscar foto de referência
   let refContent = []
   try {
-    const refRes = await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/reference?key=${item}`)
-    const refData = await refRes.json()
-    if (refData.ok) {
+    const result = await pool.query('SELECT image_base64, mime_type FROM referencias WHERE key = $1', [item])
+    if (result.rows.length > 0) {
+      const refData = {
+        imageBase64: result.rows[0].image_base64,
+        mimeType: result.rows[0].mime_type
+      }
       refContent = [
         { type: 'text', text: `Esta é a FOTO DE REFERÊNCIA mostrando como deve estar o ${labels[item] || item}:` },
         { type: 'image', source: { type: 'base64', media_type: refData.mimeType, data: refData.imageBase64 } },
@@ -26,7 +32,9 @@ export async function POST(req) {
         { type: 'image', source: { type: 'base64', media_type: mimeType, data: imageBase64 } },
       ]
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('Erro ao buscar referencia:', e)
+  }
 
   const content = refContent.length > 0 ? refContent : [
     { type: 'text', text: `Analise esta foto de ${labels[item] || item}. O ambiente está limpo e organizado? Responda APENAS em JSON: {"aprovado": true ou false, "status": "OK" ou "ATENÇÃO", "observacao": "frase curta descrevendo o que viu"}` },

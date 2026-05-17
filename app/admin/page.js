@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const REFERENCIAS = [
   { key: 'salao', label: 'Salão arrumado', emoji: '🪑' },
@@ -15,6 +15,18 @@ export default function Admin() {
   const [uploading, setUploading] = useState({})
   const [salvo, setSalvo] = useState({})
   const [erro, setErro] = useState('')
+
+  useEffect(() => {
+    if (autenticado) {
+      fetch('/api/reference').then(r => r.json()).then(data => {
+        if (data.ok && data.keys) {
+          const s = {}
+          data.keys.forEach(k => s[k] = true)
+          setSalvo(s)
+        }
+      })
+    }
+  }, [autenticado])
 
   const handleLogin = () => {
     if (senha === 'manet2024') setAutenticado(true)
