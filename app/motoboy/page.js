@@ -1,6 +1,31 @@
 'use client'
 import { useState, useEffect } from 'react'
 
+function getSemanaAtual() {
+  const hoje = new Date()
+  const dia = hoje.getDay() // 0=dom, 1=seg, 2=ter, 3=qua, 4=qui, 5=sex, 6=sab
+  // Quarta = 3, queremos o início da semana na quarta anterior
+  let diff = (dia - 3 + 7) % 7
+  const inicio = new Date(hoje)
+  inicio.setDate(hoje.getDate() - diff)
+  inicio.setHours(0,0,0,0)
+  const fim = new Date(inicio)
+  fim.setDate(inicio.getDate() + 6)
+  fim.setHours(23,59,59,999)
+  return { inicio, fim }
+}
+
+function getDiasSemana() {
+  const { inicio } = getSemanaAtual()
+  const dias = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(inicio)
+    d.setDate(inicio.getDate() + i)
+    dias.push(d)
+  }
+  return dias
+}
+
 export default function Motoboy() {
   const [freelancers, setFreelancers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -11,7 +36,13 @@ export default function Motoboy() {
       const res = await fetch('/api/freelancers')
       const data = await res.json()
       if (data.ok) {
-        const motoboys = data.data.filter(f => f.funcao === 'Motoboy')
+        const { inicio, fim } = getSemanaAtual()
+        const motoboys = data.data.filter(f => {
+          if (f.funcao !== 'Motoboy') return false
+          const d = new Date(f.data)
+          d.setHours(12,0,0,0)
+          return d >= inicio && d <= fim
+        })
         setFreelancers(motoboys)
         setUltimaAtualizacao(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
       }
@@ -25,22 +56,17 @@ export default function Motoboy() {
     return () => clearInterval(interval)
   }, [])
 
-  const semanaAtual = () => {
-    const hoje = new Date()
-    const dia = hoje.getDay()
-    const inicio = new Date(hoje)
-    inicio.setDate(hoje.getDate() - dia)
-    const fim = new Date(inicio)
-    fim.setDate(inicio.getDate() + 6)
-    return `${inicio.toLocaleDateString('pt-BR')} - ${fim.toLocaleDateString('pt-BR')}`
-  }
+  const { inicio, fim } = getSemanaAtual()
+  const semanaLabel = `${inicio.toLocaleDateString('pt-BR')} - ${fim.toLocaleDateString('pt-BR')}`
+  const dias = getDiasSemana()
 
-  // Agrupa por nome
   const agrupado = freelancers.reduce((acc, f) => {
     if (!acc[f.nome]) acc[f.nome] = []
     acc[f.nome].push(f)
     return acc
   }, {})
+
+  const nomeDia = (d) => ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][d.getDay()]
 
   const st = {
     wrap: { maxWidth: 480, margin: '0 auto', padding: '0 0 40px', fontFamily: "'DM Sans', system-ui, sans-serif" },
@@ -53,7 +79,7 @@ export default function Motoboy() {
     nome: { fontSize: 16, fontWeight: 600, color: '#1a1a18', marginBottom: 8 },
     row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '0.5px solid #f0efe9' },
     badge: (pago) => ({ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: pago ? '#eaf3de' : '#fff7e6', color: pago ? '#3b6d11' : '#b45309' }),
-    total: (pago) => ({ fontSize: 18, fontWeight: 700, color: pago ? '#3b6d11' : '#D85A30', marginTop: 8 }),
+    badgeOff: { padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, background: '#f3f2ee', color: '#b4b2a9' },
     atualiza: { fontSize: 12, color: '#888780', textAlign: 'center', marginTop: 16 },
     emptyState: { textAlign: 'center', padding: '40px 20px', color: '#888780' },
   }
@@ -63,7 +89,7 @@ export default function Motoboy() {
       <div style={st.header}>
         <div style={st.logo}>#VEM PRA MANET</div>
         <h1 style={st.title}>💰 Pagamentos Motoboys</h1>
-        <div style={st.subtitle}>Semana: {semanaAtual()}</div>
+        <div style={st.subtitle}>Semana: {semanaLabel}</div>
       </div>
       <div style={st.body}>
         {loading && <div style={st.emptyState}>Carregando...</div>}
@@ -77,18 +103,32 @@ export default function Motoboy() {
           const totalPendente = lancamentos.filter(f => !f.pago).reduce((acc, f) => acc + parseFloat(f.valor), 0)
           const totalPago = lancamentos.filter(f => f.pago).reduce((acc, f) => acc + parseFloat(f.valor), 0)
           const total = totalPendente + totalPago
+
           return (
             <div key={nome} style={st.card}>
               <div style={st.nome}>🛵 {nome}</div>
-              {lancamentos.map(f => (
-                <div key={f.id} style={st.row}>
-                  <div>
-                    <div style={{ fontSize: 13, color: '#1a1a18' }}>{new Date(f.data).toLocaleDateString('pt-BR')}</div>
-                    <div style={{ fontSize: 12, color: '#888780' }}>R$ {parseFloat(f.valor).toFixed(2)}</div>
+              {dias.map(dia => {
+                const diaStr = dia.toISOString().split('T')[0]
+                const lanc = lancamentos.find(f => {
+                  const fd = new Date(f.data)
+                  fd.setHours(12,0,0,0)
+                  return fd.toISOString().split('T')[0] === diaStr
+                })
+                return (
+                  <div key={diaStr} style={st.row}>
+                    <div>
+                      <div style={{ fontSize: 13, color: '#1a1a18', fontWeight: 500 }}>
+                        {nomeDia(dia)} {dia.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                      </div>
+                      {lanc && <div style={{ fontSize: 12, color: '#888780' }}>R$ {parseFloat(lanc.valor).toFixed(2)}</div>}
+                    </div>
+                    {lanc
+                      ? <span style={st.badge(lanc.pago)}>{lanc.pago ? '✅ Pago' : '⏳ Pendente'}</span>
+                      : <span style={st.badgeOff}>Não trabalhou</span>
+                    }
                   </div>
-                  <span style={st.badge(f.pago)}>{f.pago ? '✅ Pago' : '⏳ Pendente'}</span>
-                </div>
-              ))}
+                )
+              })}
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid #f0efe9' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#888780' }}>
                   <span>Total da semana</span>
