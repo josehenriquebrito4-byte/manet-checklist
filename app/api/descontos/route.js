@@ -32,7 +32,7 @@ export async function POST(req) {
     await initTable()
     await pool.query(
       'INSERT INTO descontos (nome, valor, motivo, data) VALUES ($1,$2,$3,$4)',
-      [nome, parseFloat(valor), motivo || '', data]
+      [nome, parseFloat(valor), motivo || '', data + 'T12:00:00']
     )
     return NextResponse.json({ ok: true })
   } catch (e) {
