@@ -13,7 +13,31 @@ export async function GET() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `)
-    return NextResponse.json({ ok: true, message: 'Tabela criada!' })
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS checklists (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(100),
+        tipo VARCHAR(50),
+        turno VARCHAR(50),
+        tarefas_ok BOOLEAN,
+        fotos_ok BOOLEAN,
+        extras JSONB,
+        resultados JSONB,
+        criado_em TIMESTAMP DEFAULT NOW()
+      )
+    `)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS freelancers (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(100),
+        funcao VARCHAR(50),
+        valor DECIMAL(10,2),
+        data DATE,
+        pago BOOLEAN DEFAULT FALSE,
+        criado_em TIMESTAMP DEFAULT NOW()
+      )
+    `)
+    return NextResponse.json({ ok: true, message: 'Tabelas criadas!' })
   } catch (e) {
     return NextResponse.json({ ok: false, error: e.message })
   }
