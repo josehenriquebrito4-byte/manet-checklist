@@ -11,7 +11,7 @@ const tipoLabel = {
 function getSemana(offset = 0) {
   const hoje = new Date()
   const dia = hoje.getDay()
-  let diff = (dia - 3 + 7) % 7
+  let diff = (dia + 4) % 7
   const inicio = new Date(hoje)
   inicio.setDate(hoje.getDate() - diff - offset * 7)
   inicio.setHours(0,0,0,0)
@@ -19,6 +19,12 @@ function getSemana(offset = 0) {
   fim.setDate(inicio.getDate() + 6)
   fim.setHours(23,59,59,999)
   return { inicio, fim }
+}
+
+function parseData(dataStr) {
+  const s = typeof dataStr === 'string' ? dataStr.split('T')[0] : new Date(dataStr).toISOString().split('T')[0]
+  const [y, m, d] = s.split('-').map(Number)
+  return new Date(y, m - 1, d)
 }
 
 export default function Gerente() {
@@ -34,18 +40,13 @@ export default function Gerente() {
   const [loading, setLoading] = useState(false)
   const [semanaOffset, setSemanaOffset] = useState(0)
 
-  // Lançamento dia
   const [lNome, setLNome] = useState('')
   const [lValor, setLValor] = useState('')
   const [lData, setLData] = useState(new Date().toISOString().split('T')[0])
-
-  // Vale/desconto
   const [dNome, setDNome] = useState('')
   const [dValor, setDValor] = useState('')
   const [dDesc, setDDesc] = useState('')
   const [dData, setDData] = useState(new Date().toISOString().split('T')[0])
-
-  // Cadastro
   const [cNome, setCNome] = useState('')
   const [cTel, setCTel] = useState('')
   const [cPix, setCPix] = useState('')
@@ -143,13 +144,10 @@ export default function Gerente() {
 
   const { inicio, fim } = getSemana(semanaOffset)
 
-  const filtrarSemana = (items, offset = semanaOffset) => {
-    const { inicio, fim } = getSemana(offset)
-    return items.filter(i => {
-      const d = new Date(i.data); d.setHours(12)
-      return d >= inicio && d <= fim
-    })
-  }
+  const filtrarSemana = (items) => items.filter(i => {
+    const d = parseData(i.data)
+    return d >= inicio && d <= fim
+  })
 
   const motoboysSemana = filtrarSemana(motoboys)
   const descontosSemana = filtrarSemana(descontos)
@@ -165,19 +163,8 @@ export default function Gerente() {
 
   const nomesExistentes = cadastros.map(c => c.nome)
   const getCadastro = (nome) => cadastros.find(c => c.nome === nome)
-
   const formatData = (d) => new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-
-  // Gera lista de semanas anteriores
-  const semanasAnteriores = []
-  for (let i = 1; i <= 8; i++) {
-    const { inicio, fim } = getSemana(i)
-    const temDados = motoboys.some(m => {
-      const d = new Date(m.data); d.setHours(12)
-      return d >= inicio && d <= fim
-    })
-    if (temDados) semanasAnteriores.push(i)
-  }
+  const formatDataSimples = (d) => parseData(d).toLocaleDateString('pt-BR')
 
   const st = {
     wrap: { maxWidth: 480, margin: '0 auto', padding: '0 0 40px', fontFamily: "'DM Sans', system-ui, sans-serif" },
@@ -330,25 +317,22 @@ export default function Gerente() {
                           {pg ? '✅ Pago' : '⏳ Pendente'}
                         </button>
                       </div>
-
                       {cadastro && (
                         <div style={st.pixBox}>
                           {cadastro.telefone && <div>📱 {cadastro.telefone}</div>}
                           {cadastro.chave_pix && <div>🔑 PIX: <strong>{cadastro.chave_pix}</strong></div>}
                         </div>
                       )}
-
                       <div style={st.sectionTitle}>Dias trabalhados</div>
                       {lancs.map(l => (
                         <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '4px 0', borderBottom: '0.5px solid #f0efe9' }}>
-                          <span style={{ color: '#888780' }}>{new Date(l.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span>
+                          <span style={{ color: '#888780' }}>{formatDataSimples(l.data)}</span>
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <span style={{ fontWeight: 500 }}>R$ {parseFloat(l.valor).toFixed(2)}</span>
                             <button onClick={() => deletarLancamento(l.id)} style={st.btnSmall('#f3f2ee', '#888780')}>🗑️</button>
                           </div>
                         </div>
                       ))}
-
                       {descs.length > 0 && (
                         <>
                           <div style={st.sectionTitle}>Vales/descontos</div>
@@ -363,7 +347,6 @@ export default function Gerente() {
                           ))}
                         </>
                       )}
-
                       <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid #e5e5e0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#888780' }}>
                           <span>Bruto</span><span>R$ {bruto(nome).toFixed(2)}</span>
@@ -396,7 +379,6 @@ export default function Gerente() {
               <input style={st.input} placeholder="CPF, email, telefone ou chave aleatória" value={cPix} onChange={e => setCPix(e.target.value)} />
               <button style={st.btnOrange} onClick={salvarCadastro}>💾 Salvar cadastro</button>
             </div>
-
             <div style={st.sectionTitle}>Motoboys cadastrados</div>
             {cadastros.length === 0 && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhum cadastro ainda.</div>}
             {cadastros.map(c => (
@@ -416,8 +398,8 @@ export default function Gerente() {
 
         {aba === 'historico' && (
           <>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
-              <button style={st.subTab(semanaOffset === 0)} onClick={() => setSemanaOffset(0)}>Atual</button>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 14, overflowX: 'auto', paddingBottom: 4 }}>
+              <button style={{ ...st.subTab(semanaOffset === 0), whiteSpace: 'nowrap', padding: '8px 10px' }} onClick={() => setSemanaOffset(0)}>Atual</button>
               {[1,2,3,4].map(i => {
                 const { inicio } = getSemana(i)
                 return (
@@ -427,11 +409,9 @@ export default function Gerente() {
                 )
               })}
             </div>
-
             <div style={{ fontSize: 13, color: '#888780', marginBottom: 12, textAlign: 'center' }}>
               {inicio.toLocaleDateString('pt-BR')} — {fim.toLocaleDateString('pt-BR')}
             </div>
-
             {nomes.length === 0 && <div style={{ textAlign: 'center', padding: 20, color: '#888780' }}>Nenhum lançamento nesta semana.</div>}
             {nomes.map(nome => {
               const pg = pago(nome)
