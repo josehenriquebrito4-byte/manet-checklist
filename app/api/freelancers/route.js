@@ -13,11 +13,11 @@ export async function GET() {
 }
 
 export async function POST(req) {
-  const { nome, funcao, valor, data } = await req.json()
+  const { nome, funcao, valor, data, desconto, motivo_desconto } = await req.json()
   try {
     await pool.query(
-      'INSERT INTO freelancers (nome, funcao, valor, data) VALUES ($1,$2,$3,$4)',
-      [nome, funcao, parseFloat(valor), data]
+      'INSERT INTO freelancers (nome, funcao, valor, data, desconto, motivo_desconto) VALUES ($1,$2,$3,$4,$5,$6)',
+      [nome, funcao, parseFloat(valor), data, parseFloat(desconto || 0), motivo_desconto || '']
     )
     return NextResponse.json({ ok: true })
   } catch (e) {
@@ -26,9 +26,13 @@ export async function POST(req) {
 }
 
 export async function PATCH(req) {
-  const { id, pago } = await req.json()
+  const { id, pago, desconto, motivo_desconto } = await req.json()
   try {
-    await pool.query('UPDATE freelancers SET pago=$1 WHERE id=$2', [pago, id])
+    if (desconto !== undefined) {
+      await pool.query('UPDATE freelancers SET desconto=$1, motivo_desconto=$2 WHERE id=$3', [parseFloat(desconto), motivo_desconto || '', id])
+    } else {
+      await pool.query('UPDATE freelancers SET pago=$1 WHERE id=$2', [pago, id])
+    }
     return NextResponse.json({ ok: true })
   } catch (e) {
     return NextResponse.json({ ok: false, error: e.message })

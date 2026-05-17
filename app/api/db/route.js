@@ -34,9 +34,13 @@ export async function GET() {
         valor DECIMAL(10,2),
         data DATE,
         pago BOOLEAN DEFAULT FALSE,
+        desconto DECIMAL(10,2) DEFAULT 0,
+        motivo_desconto VARCHAR(200) DEFAULT '',
         criado_em TIMESTAMP DEFAULT NOW()
       )
     `)
+    await pool.query(`ALTER TABLE freelancers ADD COLUMN IF NOT EXISTS desconto DECIMAL(10,2) DEFAULT 0`)
+    await pool.query(`ALTER TABLE freelancers ADD COLUMN IF NOT EXISTS motivo_desconto VARCHAR(200) DEFAULT ''`)
     return NextResponse.json({ ok: true, message: 'Tabelas criadas!' })
   } catch (e) {
     return NextResponse.json({ ok: false, error: e.message })
