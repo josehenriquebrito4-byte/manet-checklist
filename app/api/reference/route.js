@@ -1,40 +1,54 @@
 import { NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
+import { Pool } from 'pg'
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 
 export async function POST(req) {
   const { key, imageBase64, mimeType } = await req.json()
 
-  const ext = mimeType.split('/')[1] || 'jpg'
-  const dir = join(process.cwd(), 'public', 'referencias')
-  
-  await mkdir(dir, { recursive: true })
-  
-  const buffer = Buffer.from(imageBase64, 'base64')
-  const filename = `${key}.${ext}`
-  await writeFile(join(dir, filename), buffer)
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS referencias (
+        key VARCHAR(50) PRIMARY KEY,
+        image_base64 TEXT NOT NULL,
+        mime_type VARCHAR(50) NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
 
-  return NextResponse.json({ ok: true, filename })
+    await pool.query(`
+      INSERT INTO referencias (key, image_base64, mime_type, updated_at)
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (key) DO UPDATE
+      SET image_base64 = $2, mime_type = $3, updated_at = NOW()
+    `, [key, imageBase64, mimeType])
+
+    return NextResponse.json({ ok: true })
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: e.message })
+  }
 }
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const key = searchParams.get('key')
-  
+
   if (!key) return NextResponse.json({ ok: false })
 
-  const fs = await import('fs')
-  const dir = join(process.cwd(), 'public', 'referencias')
-  
-  const extensions = ['jpg', 'jpeg', 'png', 'webp']
-  for (const ext of extensions) {
-    const path = join(dir, `${key}.${ext}`)
-    if (fs.existsSync(path)) {
-      const buffer = fs.readFileSync(path)
-      const b64 = buffer.toString('base64')
-      return NextResponse.json({ ok: true, imageBase64: b64, mimeType: `image/${ext}` })
-    }
-  }
+  try {
+    const result = await pool.query(
+      'SELECT image_base64, mime_type FROM referencias WHERE key = $1',
+      [key]
+    )
 
-  return NextResponse.json({ ok: false })
+    if (result.rows.length === 0) return NextResponse.json({ ok: false })
+
+    return NextResponse.json({
+      ok: true,
+      imageBase64: result.rows[0].image_base64,
+      mimeType: result.rows[0].mime_type
+    })
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: e.message })
+  }
 }
