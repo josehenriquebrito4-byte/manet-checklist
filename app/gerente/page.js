@@ -341,7 +341,7 @@ export default function Gerente() {
                       <div style={st.sectionTitle}>Dias trabalhados</div>
                       {lancs.map(l => (
                         <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, padding: '4px 0', borderBottom: '0.5px solid #f0efe9' }}>
-                          <span style={{ color: '#888780' }}>{new Date(l.data + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                          <span style={{ color: '#888780' }}>{new Date(l.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span>
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <span style={{ fontWeight: 500 }}>R$ {parseFloat(l.valor).toFixed(2)}</span>
                             <button onClick={() => deletarLancamento(l.id)} style={st.btnSmall('#f3f2ee', '#888780')}>🗑️</button>
