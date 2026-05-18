@@ -382,7 +382,7 @@ export default function Gerente() {
               {funcionarios.map(f => (
                 <div key={f.id} style={{ ...st.card, display: 'flex', gap: 16, alignItems: 'center', marginBottom: 0 }}>
                   {f.foto_base64 ? (
-                    <img src={f.foto_base64} style={{ width: 60, height: 60, borderRadius: 30, objectFit: 'cover', border: '2px solid #D85A30' }} />
+                    <img src={f.foto_base64.replace('open?id=', 'uc?export=view&id=')} style={{ width: 60, height: 60, borderRadius: 30, objectFit: 'cover', border: '2px solid #D85A30' }} />
                   ) : (
                     <div style={{ width: 60, height: 60, borderRadius: 30, background: '#f3f2ee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>👤</div>
                   )}

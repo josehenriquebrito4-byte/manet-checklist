@@ -35,10 +35,11 @@ export async function POST(req) {
     for (const func of funcionarios) {
       // Mapeamento dos campos enviados no JSON para as colunas do banco
       const { nome, cpf, telefone, cargo, chave_pix, endereco, foto_url } = func
+      const fotoTratada = foto_url ? foto_url.replace('open?id=', 'uc?export=view&id=') : null
       
       await pool.query(
         'INSERT INTO funcionarios (nome, funcao, cpf, endereco, chave_pix, telefone, foto_base64) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-        [nome || null, cargo || null, cpf || null, endereco || null, chave_pix || null, telefone || null, foto_url || null]
+        [nome || null, cargo || null, cpf || null, endereco || null, chave_pix || null, telefone || null, fotoTratada]
       )
     }
 
