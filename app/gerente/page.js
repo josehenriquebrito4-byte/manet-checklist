@@ -70,7 +70,7 @@ export default function Gerente() {
   const [fNome, setFNome] = useState('')
   const [fFuncao, setFFuncao] = useState('')
   const [fValor, setFValor] = useState('')
-  const [fData, setFData] = useState(new Date().toISOString().split('T')[0])
+  const [fDias, setFDias] = useState([])
 
   const handleLogin = () => {
     if (senha === SENHA) { setAutenticado(true); loadData() }
@@ -170,13 +170,22 @@ export default function Gerente() {
   }
 
   const lancarDiaria = async () => {
-    if (!fNome || !fFuncao || !fValor) return
-    await fetch('/api/freelancers-diario', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: fNome, funcao: fFuncao, valor: fValor, data: fData })
+    if (!fNome || !fFuncao || !fValor || fDias.length === 0) return
+    
+    const { inicio: startWeek } = getSemanaFreelancers(semanaOffset)
+    const promises = fDias.map(offset => {
+      const d = new Date(startWeek)
+      d.setDate(d.getDate() + offset)
+      const dataFormatada = d.toISOString().split('T')[0]
+      return fetch('/api/freelancers-diario', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: fNome, funcao: fFuncao, valor: fValor, data: dataFormatada })
+      })
     })
-    setFNome(''); setFFuncao(''); setFValor('')
+    
+    await Promise.all(promises)
+    setFNome(''); setFFuncao(''); setFValor(''); setFDias([])
     loadData()
   }
 
@@ -409,11 +418,34 @@ export default function Gerente() {
                   <option value="Pizzaiolo">Pizzaiolo</option>
                   <option value="Caixa">Caixa</option>
                 </select>
-                <label style={{ ...st.label, marginTop: 10 }}>Valor do dia (R$)</label>
+                <label style={{ ...st.label, marginTop: 10 }}>Valor da diária (R$)</label>
                 <input style={st.input} type="number" placeholder="0,00" value={fValor} onChange={e => setFValor(e.target.value)} />
-                <label style={{ ...st.label, marginTop: 10 }}>Data</label>
-                <input style={st.input} type="date" value={fData} onChange={e => setFData(e.target.value)} />
-                <button style={st.btnOrange} onClick={lancarDiaria}>➕ Lançar diária</button>
+                <label style={{ ...st.label, marginTop: 10 }}>Dias trabalhados na semana</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((nome, i) => {
+                    const d = new Date(inicioF)
+                    d.setDate(d.getDate() + i)
+                    const diaMes = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                    const checked = fDias.includes(i)
+                    return (
+                      <button 
+                        key={i} 
+                        onClick={() => setFDias(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                        style={{
+                          flex: 1, minWidth: 40, padding: '8px 2px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                          border: checked ? '1.5px solid #D85A30' : '1px solid #e5e5e0',
+                          background: checked ? '#fef4f0' : '#fff',
+                          color: checked ? '#D85A30' : '#888780',
+                          cursor: 'pointer', fontFamily: "'DM Sans', system-ui, sans-serif"
+                        }}
+                      >
+                        <div style={{ marginBottom: 2 }}>{nome}</div>
+                        <div style={{ fontSize: 10, fontWeight: 400 }}>{diaMes}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button style={st.btnOrange} onClick={lancarDiaria}>➕ Lançar diárias selecionadas</button>
               </div>
             )}
 
