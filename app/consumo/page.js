@@ -126,11 +126,6 @@ export default function ConsumoTeorico() {
                 <div style={st.kpiValue}>{dados.pedidosCancelados}</div>
                 <div style={st.kpiSub}>Pedidos cancelados hoje</div>
               </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>📦 Aguardando coleta</div>
-                <div style={st.kpiValue}>{dados.pedidosAguardandoColeta}</div>
-                <div style={st.kpiSub}>Prontos, esperando o entregador (só 99Food — iFood e entrega própria não têm esse status na Saipos)</div>
-              </div>
             </div>
 
             <div style={st.card}>
