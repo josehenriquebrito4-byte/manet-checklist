@@ -116,6 +116,21 @@ export default function ConsumoTeorico() {
                 </div>
                 <div style={st.kpiSub}>Soma dos pedidos não cancelados</div>
               </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🍕 Pizzas vendidas</div>
+                <div style={st.kpiValue}>{dados.totalPizzas}</div>
+                <div style={st.kpiSub}>{dados.totalSalgadas} salgadas (30cm) + {dados.totalBrotos} brotos doces (20cm)</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>❌ Cancelados</div>
+                <div style={st.kpiValue}>{dados.pedidosCancelados}</div>
+                <div style={st.kpiSub}>Pedidos cancelados hoje</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🛵 Em andamento</div>
+                <div style={st.kpiValue}>{dados.pedidosEmAndamento}</div>
+                <div style={st.kpiSub}>Pedidos de apps (iFood/99Food) ainda não concluídos</div>
+              </div>
             </div>
 
             <div style={st.card}>
