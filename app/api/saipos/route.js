@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { computeResumoVendas } from '../../../lib/resumo-vendas'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,33 +38,8 @@ export async function GET() {
     }
 
     const data = await res.json()
-    
-    let totalVendas = 0
-    let quantidadePedidos = 0
-    let canaisObj = {}
-    
-    // Filtra apenas vendas não canceladas para os totais
-    const vendasAtivas = data.filter(d => d.canceled === 'N')
-    
-    vendasAtivas.forEach(v => {
-      totalVendas += v.total_amount || 0
-      quantidadePedidos++
-      
-      const canalStr = v.partner_sale && v.partner_sale.desc_partner_sale ? v.partner_sale.desc_partner_sale : 'Loja Própria'
-      if (!canaisObj[canalStr]) canaisObj[canalStr] = { valor: 0, quantidade: 0 }
-      
-      canaisObj[canalStr].valor += v.total_amount || 0
-      canaisObj[canalStr].quantidade++
-    })
 
-    // Ordena os canais por volume financeiro
-    const canais = Object.keys(canaisObj).map(nome => ({
-      nome,
-      valor: canaisObj[nome].valor,
-      quantidade: canaisObj[nome].quantidade
-    })).sort((a, b) => b.valor - a.valor)
-
-    const ticketMedio = quantidadePedidos > 0 ? totalVendas / quantidadePedidos : 0
+    const { totalVendas, quantidadePedidos, ticketMedio, canais } = computeResumoVendas(data)
 
     // Pega os 10 pedidos mais recentes (independente de cancelamento)
     const sorted = [...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())

@@ -102,6 +102,20 @@ export default function ConsumoTeorico() {
                 <div style={st.kpiValue}>{dados.refrigerantes}</div>
                 <div style={st.kpiSub}>{dados.totalCombos} combos vendidos (1 refri cada)</div>
               </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🧾 Pedidos</div>
+                <div style={st.kpiValue}>{dados.quantidadePedidos}</div>
+                <div style={st.kpiSub}>
+                  Ticket médio {dados.ticketMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>💰 Faturamento</div>
+                <div style={st.kpiValue}>
+                  {dados.totalVendas.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </div>
+                <div style={st.kpiSub}>Soma dos pedidos não cancelados</div>
+              </div>
             </div>
 
             <div style={st.card}>
@@ -114,6 +128,21 @@ export default function ConsumoTeorico() {
               ))}
               {Object.keys(dados.porFicha).length === 0 && (
                 <div style={{ color: '#888780', fontSize: 14 }}>Nenhuma pizza salgada registrada nesse dia.</div>
+              )}
+            </div>
+
+            <div style={{ ...st.card, marginTop: 16 }}>
+              <h2 style={st.sectionTitle}>Pedidos por canal</h2>
+              {dados.canais.map(c => (
+                <div key={c.nome} style={st.tableRow}>
+                  <div style={{ fontWeight: 500, color: '#1a1a18' }}>{c.nome}</div>
+                  <div style={{ textAlign: 'right', color: '#888780' }}>
+                    {c.quantidade} · {c.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </div>
+                </div>
+              ))}
+              {dados.canais.length === 0 && (
+                <div style={{ color: '#888780', fontSize: 14 }}>Nenhum pedido registrado nesse dia.</div>
               )}
             </div>
           </>
