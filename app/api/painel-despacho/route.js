@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { computePedidosProntos, JANELA_PADRAO_MINUTOS } from '../../../lib/painel-despacho'
+import { computePedidosProntos, JANELA_PADRAO_MINUTOS, DELAY_EXIBICAO_MINUTOS } from '../../../lib/painel-despacho'
 import { fetchSaiposComRetry, shiftDateHoje } from '../../../lib/saipos-fetch'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +32,7 @@ export async function GET() {
     const now = new Date()
     const pedidos = computePedidosProntos(itemsResult.data || [], salesResult.data || [], { now })
 
-    return NextResponse.json({ ok: true, now: now.toISOString(), janelaMinutos: JANELA_PADRAO_MINUTOS, pedidos })
+    return NextResponse.json({ ok: true, now: now.toISOString(), janelaMinutos: JANELA_PADRAO_MINUTOS, delayExibicaoMinutos: DELAY_EXIBICAO_MINUTOS, pedidos })
   } catch (e) {
     console.error('Erro painel-despacho:', e)
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 })

@@ -12,19 +12,15 @@ function elapsedMinutes(readyAtIso) {
 function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janelaMinutos }) {
   const st = {
     col: { flex: 1, background: cor, color: corTexto, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' },
-    header: { padding: '20px 28px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 },
-    titulo: { fontSize: 44, fontWeight: 800, letterSpacing: 0.5 },
-    contador: { fontSize: 28, fontWeight: 700, opacity: 0.85 },
-    grid: { flex: 1, overflowY: 'auto', padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', gap: 14 },
-    vazio: { margin: 'auto', fontSize: 28, fontWeight: 600, opacity: 0.6, textAlign: 'center' },
-    card: { background: corCardBg, border: `3px solid ${corCardBorda}`, borderRadius: 20, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 },
+    header: { padding: '16px 24px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 },
+    titulo: { fontSize: 36, fontWeight: 800, letterSpacing: 0.5 },
+    contador: { fontSize: 22, fontWeight: 700, opacity: 0.85 },
+    grid: { flex: 1, overflowY: 'auto', padding: '8px 16px 16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12, alignContent: 'start' },
+    vazio: { gridColumn: '1 / -1', margin: 'auto', fontSize: 28, fontWeight: 600, opacity: 0.6, textAlign: 'center' },
+    card: { background: corCardBg, border: `3px solid ${corCardBorda}`, borderRadius: 16, padding: '14px 8px', minHeight: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 },
     cardAlerta: { animation: 'piscaAlerta 1s ease-in-out infinite' },
-    saleInfo: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 },
-    cliente: { fontSize: 24, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 },
-    itens: { fontSize: 15, fontWeight: 500, opacity: 0.75, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 320 },
-    pedidoBox: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, flexShrink: 0 },
-    pedidoReal: { fontSize: 52, fontWeight: 800, lineHeight: 1, fontVariantNumeric: 'tabular-nums' },
-    pedidoInterno: { fontSize: 15, fontWeight: 600, opacity: 0.7 },
+    pedidoReal: { fontSize: 56, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums' },
+    pedidoInterno: { fontSize: 16, fontWeight: 600, opacity: 0.65 },
   }
 
   return (
@@ -40,14 +36,8 @@ function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janel
           const alerta = minutos >= (janelaMinutos - ALERTA_FALTAM_MINUTOS)
           return (
             <div key={p.idSale} style={{ ...st.card, ...(alerta ? st.cardAlerta : {}) }}>
-              <div style={st.saleInfo}>
-                <div style={st.cliente}>{p.cliente}</div>
-                {p.itens.length > 0 && <div style={st.itens}>{p.itens.join(' + ')}</div>}
-              </div>
-              <div style={st.pedidoBox}>
-                <div style={st.pedidoReal}>#{p.pedidoReal}</div>
-                <div style={st.pedidoInterno}>interno #{p.saleNumber}</div>
-              </div>
+              <div style={st.pedidoReal}>#{p.pedidoReal}</div>
+              <div style={st.pedidoInterno}>interno #{p.saleNumber}</div>
             </div>
           )
         })}
