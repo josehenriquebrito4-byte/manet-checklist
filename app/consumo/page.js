@@ -122,6 +122,26 @@ export default function ConsumoTeorico() {
                 <div style={st.kpiSub}>Pizza Portuguesa</div>
               </div>
               <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🥓 Bacon</div>
+                <div style={st.kpiValue}>{dados.baconKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Duqueza e Caprichosa</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🧀 Gorgonzola</div>
+                <div style={st.kpiValue}>{dados.gorgonzolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Manet e 5 Queijos</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🍅 Tomate</div>
+                <div style={st.kpiValue}>{dados.tomateKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Pizza Marguerita</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🧅 Cebola</div>
+                <div style={st.kpiValue}>{dados.cebolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Calabresa e Portuguesa</div>
+              </div>
+              <div style={st.kpiCard}>
                 <div style={st.kpiLabel}>📦 Caixas</div>
                 <div style={st.kpiValue}>{dados.caixaTotal}</div>
                 <div style={st.kpiSub}>{dados.caixa30cm} de 30cm + {dados.caixa20cm} de 20cm</div>
