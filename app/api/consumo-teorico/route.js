@@ -4,6 +4,41 @@ import { computeResumoVendas } from '../../../lib/resumo-vendas'
 
 export const dynamic = 'force-dynamic'
 
+// A Saipos usa um backend PostgREST que ocasionalmente estoura o pool de
+// conexões dele (PGRST002/PGRST003) ou some no meio da conexão (ECONNRESET),
+// sempre de forma transitória — a mesma chamada costuma funcionar segundos
+// depois. Por isso cada fetch tenta de novo (backoff curto) antes de desistir.
+const RETRYABLE_STATUS = new Set([502, 503, 504])
+const RETRYABLE_BODY_RE = /PGRST002|PGRST003/
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function fetchSaiposComRetry(url, token, { retries = 2, baseDelayMs = 400 } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    let res
+    try {
+      res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
+    } catch (e) {
+      if (attempt === retries) throw e
+      await sleep(baseDelayMs * (attempt + 1))
+      continue
+    }
+
+    if (res.ok) {
+      return { ok: true, data: await res.json() }
+    }
+
+    const details = await res.text()
+    const retryable = RETRYABLE_STATUS.has(res.status) || RETRYABLE_BODY_RE.test(details)
+    if (!retryable || attempt === retries) {
+      return { ok: false, status: res.status, details }
+    }
+    await sleep(baseDelayMs * (attempt + 1))
+  }
+}
+
 function shiftDateHoje() {
   const now = new Date()
   const brTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
@@ -31,22 +66,20 @@ export async function GET(request) {
   const salesUrl = `https://data.saipos.io/v1/search_sales?p_date_column_filter=shift_date&p_filter_date_start=${date}T00:00:00&p_filter_date_end=${date}T23:59:59&p_limit=1000`
 
   try {
-    const [itemsRes, salesRes] = await Promise.all([
-      fetch(itemsUrl, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }),
-      fetch(salesUrl, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }),
+    const [itemsResult, salesResult] = await Promise.all([
+      fetchSaiposComRetry(itemsUrl, token),
+      fetchSaiposComRetry(salesUrl, token),
     ])
 
-    if (!itemsRes.ok) {
-      const text = await itemsRes.text()
-      return NextResponse.json({ ok: false, error: 'Erro ao buscar dados na Saipos', details: text }, { status: itemsRes.status })
+    if (!itemsResult.ok) {
+      return NextResponse.json({ ok: false, error: 'Erro ao buscar dados na Saipos', details: itemsResult.details }, { status: itemsResult.status })
     }
-    if (!salesRes.ok) {
-      const text = await salesRes.text()
-      return NextResponse.json({ ok: false, error: 'Erro ao buscar resumo de vendas na Saipos', details: text }, { status: salesRes.status })
+    if (!salesResult.ok) {
+      return NextResponse.json({ ok: false, error: 'Erro ao buscar resumo de vendas na Saipos', details: salesResult.details }, { status: salesResult.status })
     }
 
-    const salesItems = await itemsRes.json()
-    const salesData = await salesRes.json()
+    const salesItems = itemsResult.data
+    const salesData = salesResult.data
 
     const consumo = computeConsumoTeorico(salesItems)
     const resumo = computeResumoVendas(salesData)
