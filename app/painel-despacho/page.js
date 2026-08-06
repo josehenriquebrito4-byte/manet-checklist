@@ -11,7 +11,7 @@ function elapsedMinutes(readyAtIso) {
 
 function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janelaMinutos }) {
   const st = {
-    col: { flex: 1, background: cor, color: corTexto, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' },
+    col: { flex: 1, background: cor, color: corTexto, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
     header: { padding: '16px 24px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 },
     titulo: { fontSize: 36, fontWeight: 800, letterSpacing: 0.5 },
     contador: { fontSize: 22, fontWeight: 700, opacity: 0.85 },
@@ -36,7 +36,7 @@ function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janel
           const alerta = minutos >= (janelaMinutos - ALERTA_FALTAM_MINUTOS)
           return (
             <div key={p.idSale} style={{ ...st.card, ...(alerta ? st.cardAlerta : {}) }}>
-              <div style={st.pedidoReal}>#{p.pedidoReal}</div>
+              <div style={st.pedidoReal}>{p.pedidoReal}</div>
               <div style={st.pedidoInterno}>interno #{p.saleNumber}</div>
             </div>
           )
@@ -74,8 +74,17 @@ export default function PainelDespacho() {
   const ifood = pedidos.filter(p => p.canal === 'iFood')
   const noventaNove = pedidos.filter(p => p.canal === '99 Food')
 
+  const faixa = {
+    width: '100%',
+    flexShrink: 0,
+    background: '#1a1a18',
+    color: '#fff',
+    textAlign: 'center',
+    boxSizing: 'border-box',
+  }
+
   return (
-    <div style={{ display: 'flex', width: '100vw', height: '100vh', fontFamily: "'DM Sans', system-ui, sans-serif", overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', fontFamily: "'DM Sans', system-ui, sans-serif", overflow: 'hidden' }}>
       <style>{`
         @keyframes piscaAlerta {
           0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
@@ -83,24 +92,37 @@ export default function PainelDespacho() {
         }
         html, body { margin: 0; padding: 0; }
       `}</style>
-      <Coluna
-        titulo="🔴 iFood"
-        cor="#EA1D2C"
-        corTexto="#fff"
-        corCardBg="rgba(255,255,255,0.12)"
-        corCardBorda="rgba(255,255,255,0.35)"
-        pedidos={ifood}
-        janelaMinutos={janelaMinutos}
-      />
-      <Coluna
-        titulo="🟡 99Food"
-        cor="#FFC700"
-        corTexto="#1a1a18"
-        corCardBg="rgba(0,0,0,0.08)"
-        corCardBorda="rgba(0,0,0,0.25)"
-        pedidos={noventaNove}
-        janelaMinutos={janelaMinutos}
-      />
+
+      <div style={{ ...faixa, padding: '14px 24px', fontSize: 26, fontWeight: 700, lineHeight: 1.3 }}>
+        Aguardar na disciplina, ele já está sendo numerado e será liberado em instantes.
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <Coluna
+          titulo="🔴 iFood"
+          cor="#EA1D2C"
+          corTexto="#fff"
+          corCardBg="rgba(255,255,255,0.12)"
+          corCardBorda="rgba(255,255,255,0.35)"
+          pedidos={ifood}
+          janelaMinutos={janelaMinutos}
+        />
+        <Coluna
+          titulo="🟡 99Food"
+          cor="#FFC700"
+          corTexto="#1a1a18"
+          corCardBg="rgba(0,0,0,0.08)"
+          corCardBorda="rgba(0,0,0,0.25)"
+          pedidos={noventaNove}
+          janelaMinutos={janelaMinutos}
+        />
+      </div>
+
+      <div style={{ ...faixa, padding: '12px 24px', fontSize: 22, fontWeight: 700, lineHeight: 1.5 }}>
+        <div>Caso não esteja, aguardar até que apareça</div>
+        <div>Controle em tempo real de pedidos</div>
+        <div>Não sufoque a saída, respeite pra ser respeitado!</div>
+      </div>
     </div>
   )
 }
