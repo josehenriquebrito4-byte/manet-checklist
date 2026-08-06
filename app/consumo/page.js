@@ -18,6 +18,7 @@ export default function ConsumoTeorico() {
   const [erro, setErro] = useState('')
   const [lastUpdate, setLastUpdate] = useState(null)
   const [saboresAberto, setSaboresAberto] = useState(false)
+  const [insumosAberto, setInsumosAberto] = useState(false)
 
   const fetchConsumo = useCallback(async (d) => {
     try {
@@ -97,51 +98,6 @@ export default function ConsumoTeorico() {
           <>
             <div style={st.grid}>
               <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🧀 Muçarela</div>
-                <div style={st.kpiValue}>{dados.mussarelaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>{dados.totalSalgadas} pizzas salgadas (30cm)</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🌶️ Calabresa</div>
-                <div style={st.kpiValue}>{dados.calabresaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Calabresa, Manet e Portuguesa</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🧈 Catupiry</div>
-                <div style={st.kpiValue}>{dados.catupiryKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Frango, Duqueza, 5 Queijos e Caprichosa</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🍗 Frango</div>
-                <div style={st.kpiValue}>{dados.frangoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Pizza Frango</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🥓 Presunto</div>
-                <div style={st.kpiValue}>{dados.presuntoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Pizza Portuguesa</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🥓 Bacon</div>
-                <div style={st.kpiValue}>{dados.baconKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Duqueza e Caprichosa</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🧀 Gorgonzola</div>
-                <div style={st.kpiValue}>{dados.gorgonzolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Manet e 5 Queijos</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🍅 Tomate</div>
-                <div style={st.kpiValue}>{dados.tomateKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Pizza Marguerita</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🧅 Cebola</div>
-                <div style={st.kpiValue}>{dados.cebolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
-                <div style={st.kpiSub}>Calabresa e Portuguesa</div>
-              </div>
-              <div style={st.kpiCard}>
                 <div style={st.kpiLabel}>📦 Caixas</div>
                 <div style={st.kpiValue}>{dados.caixaTotal}</div>
                 <div style={st.kpiSub}>{dados.caixa30cm} de 30cm + {dados.caixa20cm} de 20cm</div>
@@ -176,6 +132,72 @@ export default function ConsumoTeorico() {
                 <div style={st.kpiSub}>Pedidos cancelados hoje</div>
               </div>
             </div>
+
+            <button
+              type="button"
+              style={{ ...st.saboresBtn, marginBottom: 16 }}
+              onClick={() => setInsumosAberto(v => !v)}
+              aria-expanded={insumosAberto}
+            >
+              <span>🧾 Insumos</span>
+              <span style={st.saboresChevron}>{insumosAberto ? 'ocultar ▲' : 'ver detalhes ▼'}</span>
+            </button>
+            {insumosAberto && (
+              <div style={{ ...st.saboresPanel, marginBottom: 16 }}>
+                <div style={{ ...st.grid, marginBottom: 0, paddingTop: 12 }}>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🧀 Muçarela</div>
+                    <div style={st.kpiValue}>{dados.mussarelaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>{dados.totalSalgadas} pizzas salgadas (30cm)</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🌶️ Calabresa</div>
+                    <div style={st.kpiValue}>{dados.calabresaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Só sabor Calabresa, Manet e Portuguesa (consumo real)</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🧈 Catupiry</div>
+                    <div style={st.kpiValue}>{dados.catupiryKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Frango, Duqueza, 5 Queijos e Caprichosa</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🍗 Frango</div>
+                    <div style={st.kpiValue}>{dados.frangoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Pizza Frango</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🥓 Presunto</div>
+                    <div style={st.kpiValue}>{dados.presuntoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Pizza Portuguesa</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🥓 Bacon</div>
+                    <div style={st.kpiValue}>{dados.baconKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Duqueza e Caprichosa</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🧀 Gorgonzola</div>
+                    <div style={st.kpiValue}>{dados.gorgonzolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Manet e 5 Queijos</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🍅 Tomate</div>
+                    <div style={st.kpiValue}>{dados.tomateKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Pizza Marguerita</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🧅 Cebola</div>
+                    <div style={st.kpiValue}>{dados.cebolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                    <div style={st.kpiSub}>Calabresa e Portuguesa</div>
+                  </div>
+                </div>
+                {dados.calabresaFallbackKg > 0 && (
+                  <div style={{ fontSize: 12, color: '#888780', paddingTop: 14 }}>
+                    + {dados.calabresaFallbackKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg aproximados em sabores sem ficha própria (ex: Predileta, Palmito) — usado só como referência de custo, não entra no consumo real de calabresa acima.
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               type="button"
