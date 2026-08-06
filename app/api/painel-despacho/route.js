@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
-import { computePedidosProntos, JANELA_PADRAO_MINUTOS, DELAY_EXIBICAO_MINUTOS } from '../../../lib/painel-despacho'
+import { computePedidosProntos, JANELA_PADRAO_MINUTOS } from '../../../lib/painel-despacho'
 import { fetchSaiposComRetry, shiftDateHoje } from '../../../lib/saipos-fetch'
 
 export const dynamic = 'force-dynamic'
 
+// Sem no-store explícito, o navegador/proxy da TV pode servir uma resposta
+// cacheada em vez de buscar a mais recente a cada poll, atrasando a
+// remoção de pedido já retirado mesmo com o servidor já refletindo a
+// mudança.
+const NO_STORE_HEADERS = { 'Cache-Control': 'no-store' }
+
 export async function GET() {
   const token = process.env.SAIPOS_TOKEN
   if (!token) {
-    return NextResponse.json({ ok: false, error: 'Variável de ambiente SAIPOS_TOKEN não configurada.' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: 'Variável de ambiente SAIPOS_TOKEN não configurada.' }, { status: 500, headers: NO_STORE_HEADERS })
   }
 
   const date = shiftDateHoje()
@@ -21,10 +27,10 @@ export async function GET() {
     ])
 
     if (!itemsResult.ok) {
-      return NextResponse.json({ ok: false, error: 'Erro ao buscar dados na Saipos', details: itemsResult.details }, { status: itemsResult.status })
+      return NextResponse.json({ ok: false, error: 'Erro ao buscar dados na Saipos', details: itemsResult.details }, { status: itemsResult.status, headers: NO_STORE_HEADERS })
     }
     if (!salesResult.ok) {
-      return NextResponse.json({ ok: false, error: 'Erro ao buscar resumo de vendas na Saipos', details: salesResult.details }, { status: salesResult.status })
+      return NextResponse.json({ ok: false, error: 'Erro ao buscar resumo de vendas na Saipos', details: salesResult.details }, { status: salesResult.status, headers: NO_STORE_HEADERS })
     }
 
     // A Saipos retorna `null` (em vez de []) quando não há vendas no período
@@ -32,9 +38,9 @@ export async function GET() {
     const now = new Date()
     const pedidos = computePedidosProntos(itemsResult.data || [], salesResult.data || [], { now })
 
-    return NextResponse.json({ ok: true, now: now.toISOString(), janelaMinutos: JANELA_PADRAO_MINUTOS, delayExibicaoMinutos: DELAY_EXIBICAO_MINUTOS, pedidos })
+    return NextResponse.json({ ok: true, now: now.toISOString(), janelaMinutos: JANELA_PADRAO_MINUTOS, pedidos }, { headers: NO_STORE_HEADERS })
   } catch (e) {
     console.error('Erro painel-despacho:', e)
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 })
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500, headers: NO_STORE_HEADERS })
   }
 }

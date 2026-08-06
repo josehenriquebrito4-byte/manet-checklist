@@ -52,7 +52,7 @@ export default function PainelDespacho() {
 
   const fetchDados = useCallback(async () => {
     try {
-      const res = await fetch('/api/painel-despacho')
+      const res = await fetch('/api/painel-despacho', { cache: 'no-store' })
       const result = await res.json()
       if (result.ok) {
         setDados(result)
