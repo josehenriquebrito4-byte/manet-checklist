@@ -9,6 +9,15 @@ function elapsedMinutes(readyAtIso) {
   return (Date.now() - new Date(readyAtIso).getTime()) / 60000
 }
 
+// Tamanho fixo estourava a borda do card pra pedido com mais dígitos (a
+// 99Food usa código de 6 dígitos, o iFood de 4) — encolhe pelo tamanho do
+// número em vez de usar um valor fixo pros dois canais.
+function pedidoFontSize(pedidoReal) {
+  const digitos = (pedidoReal || '').length
+  if (digitos <= 4) return 56
+  return Math.max(30, 56 - (digitos - 4) * 9)
+}
+
 function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janelaMinutos }) {
   const st = {
     col: { flex: 1, background: cor, color: corTexto, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
@@ -19,7 +28,7 @@ function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janel
     vazio: { gridColumn: '1 / -1', margin: 'auto', fontSize: 28, fontWeight: 600, opacity: 0.6, textAlign: 'center' },
     card: { background: corCardBg, border: `3px solid ${corCardBorda}`, borderRadius: 16, padding: '14px 8px', minHeight: 110, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 },
     cardAlerta: { animation: 'piscaAlerta 1s ease-in-out infinite' },
-    pedidoReal: { fontSize: 56, fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums' },
+    pedidoReal: { fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', width: '100%', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis' },
     pedidoInterno: { fontSize: 16, fontWeight: 600, opacity: 0.65 },
   }
 
@@ -36,7 +45,7 @@ function Coluna({ titulo, cor, corTexto, corCardBg, corCardBorda, pedidos, janel
           const alerta = minutos >= (janelaMinutos - ALERTA_FALTAM_MINUTOS)
           return (
             <div key={p.idSale} style={{ ...st.card, ...(alerta ? st.cardAlerta : {}) }}>
-              <div style={st.pedidoReal}>{p.pedidoReal}</div>
+              <div style={{ ...st.pedidoReal, fontSize: pedidoFontSize(p.pedidoReal) }}>{p.pedidoReal}</div>
               <div style={st.pedidoInterno}>interno #{p.saleNumber}</div>
             </div>
           )
