@@ -98,16 +98,6 @@ export default function ConsumoTeorico() {
           <>
             <div style={st.grid}>
               <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>📦 Caixas</div>
-                <div style={st.kpiValue}>{dados.caixaTotal}</div>
-                <div style={st.kpiSub}>{dados.caixa30cm} de 30cm + {dados.caixa20cm} de 20cm</div>
-              </div>
-              <div style={st.kpiCard}>
-                <div style={st.kpiLabel}>🥤 Refrigerantes</div>
-                <div style={st.kpiValue}>{dados.refrigerantes}</div>
-                <div style={st.kpiSub}>{dados.totalCombos} combos vendidos (1 refri cada)</div>
-              </div>
-              <div style={st.kpiCard}>
                 <div style={st.kpiLabel}>🧾 Pedidos</div>
                 <div style={st.kpiValue}>{dados.quantidadePedidos}</div>
                 <div style={st.kpiSub}>
@@ -189,6 +179,16 @@ export default function ConsumoTeorico() {
                     <div style={st.kpiLabel}>🧅 Cebola</div>
                     <div style={st.kpiValue}>{dados.cebolaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
                     <div style={st.kpiSub}>Calabresa e Portuguesa</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>📦 Caixas</div>
+                    <div style={st.kpiValue}>{dados.caixaTotal}</div>
+                    <div style={st.kpiSub}>{dados.caixa30cm} de 30cm + {dados.caixa20cm} de 20cm</div>
+                  </div>
+                  <div style={st.kpiCard}>
+                    <div style={st.kpiLabel}>🥤 Refrigerantes</div>
+                    <div style={st.kpiValue}>{dados.refrigerantes}</div>
+                    <div style={st.kpiSub}>{dados.totalCombos} combos vendidos (1 refri cada)</div>
                   </div>
                 </div>
                 {dados.calabresaFallbackKg > 0 && (
