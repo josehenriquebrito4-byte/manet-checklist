@@ -17,6 +17,7 @@ export default function ConsumoTeorico() {
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [saboresAberto, setSaboresAberto] = useState(false)
 
   const fetchConsumo = useCallback(async (d) => {
     try {
@@ -62,6 +63,9 @@ export default function ConsumoTeorico() {
     card: { background: '#fff', borderRadius: 16, border: '1px solid #e5e5e0', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
     sectionTitle: { fontSize: 18, fontWeight: 700, color: '#1a1a18', marginBottom: 16 },
     tableRow: { display: 'grid', gridTemplateColumns: '1fr 100px', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f0efe9', fontSize: 14 },
+    saboresBtn: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #e5e5e0', borderRadius: 16, padding: '18px 24px', fontSize: 16, fontWeight: 700, color: '#1a1a18', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' },
+    saboresChevron: { fontSize: 13, color: '#888780', fontWeight: 600 },
+    saboresPanel: { background: '#fff', borderRadius: 16, border: '1px solid #e5e5e0', borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0, padding: '8px 24px 20px' },
   }
 
   return (
@@ -98,6 +102,31 @@ export default function ConsumoTeorico() {
                 <div style={st.kpiSub}>{dados.totalSalgadas} pizzas salgadas (30cm)</div>
               </div>
               <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🌶️ Calabresa</div>
+                <div style={st.kpiValue}>{dados.calabresaKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Calabresa, Manet e Portuguesa</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🧈 Catupiry</div>
+                <div style={st.kpiValue}>{dados.catupiryKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Frango, Duqueza, 5 Queijos e Caprichosa</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🍗 Frango</div>
+                <div style={st.kpiValue}>{dados.frangoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Pizza Frango</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>🥓 Presunto</div>
+                <div style={st.kpiValue}>{dados.presuntoKg.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg</div>
+                <div style={st.kpiSub}>Pizza Portuguesa</div>
+              </div>
+              <div style={st.kpiCard}>
+                <div style={st.kpiLabel}>📦 Caixas</div>
+                <div style={st.kpiValue}>{dados.caixaTotal}</div>
+                <div style={st.kpiSub}>{dados.caixa30cm} de 30cm + {dados.caixa20cm} de 20cm</div>
+              </div>
+              <div style={st.kpiCard}>
                 <div style={st.kpiLabel}>🥤 Refrigerantes</div>
                 <div style={st.kpiValue}>{dados.refrigerantes}</div>
                 <div style={st.kpiSub}>{dados.totalCombos} combos vendidos (1 refri cada)</div>
@@ -128,18 +157,28 @@ export default function ConsumoTeorico() {
               </div>
             </div>
 
-            <div style={st.card}>
-              <h2 style={st.sectionTitle}>Muçarela por sabor</h2>
-              {Object.entries(dados.porFicha).sort((a, b) => b[1] - a[1]).map(([ficha, qtd]) => (
-                <div key={ficha} style={st.tableRow}>
-                  <div style={{ fontWeight: 500, color: '#1a1a18' }}>{ficha}</div>
-                  <div style={{ textAlign: 'right', color: '#888780' }}>{qtd} pizza{qtd !== 1 ? 's' : ''}</div>
-                </div>
-              ))}
-              {Object.keys(dados.porFicha).length === 0 && (
-                <div style={{ color: '#888780', fontSize: 14 }}>Nenhuma pizza salgada registrada nesse dia.</div>
-              )}
-            </div>
+            <button
+              type="button"
+              style={st.saboresBtn}
+              onClick={() => setSaboresAberto(v => !v)}
+              aria-expanded={saboresAberto}
+            >
+              <span>🍕 Sabores</span>
+              <span style={st.saboresChevron}>{saboresAberto ? 'ocultar ▲' : 'ver detalhes ▼'}</span>
+            </button>
+            {saboresAberto && (
+              <div style={st.saboresPanel}>
+                {Object.entries(dados.porFicha).sort((a, b) => b[1] - a[1]).map(([ficha, qtd]) => (
+                  <div key={ficha} style={st.tableRow}>
+                    <div style={{ fontWeight: 500, color: '#1a1a18' }}>{ficha}</div>
+                    <div style={{ textAlign: 'right', color: '#888780' }}>{qtd} pizza{qtd !== 1 ? 's' : ''}</div>
+                  </div>
+                ))}
+                {Object.keys(dados.porFicha).length === 0 && (
+                  <div style={{ color: '#888780', fontSize: 14, paddingTop: 10 }}>Nenhuma pizza salgada registrada nesse dia.</div>
+                )}
+              </div>
+            )}
 
             <div style={{ ...st.card, marginTop: 16 }}>
               <h2 style={st.sectionTitle}>Pedidos por canal</h2>
