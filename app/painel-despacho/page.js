@@ -77,9 +77,10 @@ export default function PainelDespacho() {
   const faixa = {
     width: '100%',
     flexShrink: 0,
-    background: '#1a1a18',
-    color: '#fff',
+    background: '#fff',
+    color: '#EA1D2C',
     textAlign: 'center',
+    textTransform: 'uppercase',
     boxSizing: 'border-box',
   }
 
@@ -93,7 +94,7 @@ export default function PainelDespacho() {
         html, body { margin: 0; padding: 0; }
       `}</style>
 
-      <div style={{ ...faixa, padding: '14px 24px', fontSize: 26, fontWeight: 700, lineHeight: 1.3 }}>
+      <div style={{ ...faixa, padding: '14px 24px', fontSize: 26, fontWeight: 800, lineHeight: 1.3, borderBottom: '4px solid #EA1D2C' }}>
         Aguardar na disciplina, ele já está sendo numerado e será liberado em instantes.
       </div>
 
@@ -118,9 +119,8 @@ export default function PainelDespacho() {
         />
       </div>
 
-      <div style={{ ...faixa, padding: '12px 24px', fontSize: 22, fontWeight: 700, lineHeight: 1.5 }}>
-        <div>Caso não esteja, aguardar até que apareça</div>
-        <div>Controle em tempo real de pedidos</div>
+      <div style={{ ...faixa, padding: '12px 24px', fontSize: 22, fontWeight: 800, lineHeight: 1.4, borderTop: '4px solid #EA1D2C' }}>
+        <div>Caso não esteja, aguardar até que apareça — controle em tempo real</div>
         <div>Não sufoque a saída, respeite pra ser respeitado!</div>
       </div>
     </div>
