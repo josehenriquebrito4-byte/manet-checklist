@@ -37,7 +37,9 @@ export async function GET() {
        return NextResponse.json({ ok: false, error: 'Erro ao buscar dados na Saipos', details: text }, { status: res.status })
     }
 
-    const data = await res.json()
+    // A Saipos retorna `null` (em vez de []) quando não há vendas no período
+    // (ex: logo após a virada de turno, antes do primeiro pedido do dia).
+    const data = (await res.json()) || []
 
     const { totalVendas, quantidadePedidos, ticketMedio, canais } = computeResumoVendas(data)
 
